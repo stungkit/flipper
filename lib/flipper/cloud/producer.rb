@@ -55,14 +55,6 @@ module Flipper
         nil
       end
 
-      def deliver
-        ensure_threads_alive
-
-        @queue << [:deliver, nil]
-
-        nil
-      end
-
       def shutdown
         @timer_thread.exit if @timer_thread
         @queue << [:shutdown, nil]
@@ -139,7 +131,7 @@ module Flipper
 
               # TODO: don't do a deliver if a deliver happened for some other
               # reason recently
-              deliver
+              @queue << [:deliver, nil]
             end
           end
         ensure
