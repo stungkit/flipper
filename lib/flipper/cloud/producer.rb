@@ -171,7 +171,7 @@ module Flipper
       end
 
       def post(body)
-        on_error = lambda do |exception, attempts|
+        on_error = lambda do |exception, _attempts|
           instrument_exception(exception)
         end
 
