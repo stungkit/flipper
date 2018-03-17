@@ -9,7 +9,7 @@ RSpec.describe Flipper::Api::V1::Actions::Events do
   describe 'post' do
     context 'valid' do
       it 'responds with 201' do
-        now = Flipper::Util.timestamp
+        now = Flipper::Timestamp.generate
         client_timestamp = now - 100
         timestamp = now - 1000
         env = {

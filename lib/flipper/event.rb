@@ -1,4 +1,4 @@
-require "flipper/util"
+require "flipper/timestamp"
 
 module Flipper
   class Event
@@ -16,7 +16,7 @@ module Flipper
     def initialize(attributes = {})
       @type = attributes.fetch(:type)
       @dimensions = attributes.fetch(:dimensions) { {} }
-      @timestamp = attributes.fetch(:timestamp) { Flipper::Util.timestamp }
+      @timestamp = attributes.fetch(:timestamp) { Flipper::Timestamp.generate }
     end
 
     def as_json

@@ -1,6 +1,7 @@
 require 'uri'
 require 'openssl'
 require 'flipper/version'
+require 'flipper/timestamp'
 
 module Flipper
   module Adapters
@@ -13,6 +14,38 @@ module Flipper
         }.freeze
 
         HTTPS_SCHEME = "https".freeze
+
+        VALID_SCHEMES = [
+          "http".freeze,
+          "https".freeze,
+        ].freeze
+
+        def self.url_for(url, path)
+          uri = URI(url)
+
+          unless VALID_SCHEMES.include?(uri.scheme)
+            raise ArgumentError, <<-ERR
+              #{url} does not have valid scheme. schema was #{uri.scheme} \
+              and valid schemes are #{VALID_SCHEMES.inspect}
+            ERR
+          end
+
+          path_uri = URI(path)
+          uri.path += "/#{path_uri.path}".squeeze("/")
+          uri.path.squeeze!("/")
+
+          if path_uri.query
+            if uri.query
+              uri.query += "&#{path_uri.query}"
+            else
+              uri.query = path_uri.query
+            end
+
+            uri.query.squeeze!("&")
+          end
+
+          uri.to_s
+        end
 
         attr_reader :url
         attr_reader :headers
@@ -47,7 +80,7 @@ module Flipper
         private
 
         def perform(http_method, path, headers = {}, options = {})
-          url = Flipper::Util.url_for(@url, path)
+          url = self.class.url_for(@url, path)
           uri = URI(url)
           http = build_http(uri)
           request = build_request(http_method, uri, headers, options)
@@ -70,7 +103,7 @@ module Flipper
 
         def build_request(http_method, uri, headers, options)
           request_headers = {
-            "FLIPPER_TIMESTAMP" => Flipper::Util.timestamp.to_s,
+            "FLIPPER_TIMESTAMP" => Flipper::Timestamp.generate.to_s,
           }.merge(headers)
           body = options[:body]
           request = http_method.new(uri.request_uri)

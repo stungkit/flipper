@@ -1,6 +1,6 @@
 require "forwardable"
 require "flipper/event"
-require "flipper/util"
+require "flipper/timestamp"
 
 module Flipper
   module Api
@@ -24,7 +24,7 @@ module Flipper
 
               assign_client_details
 
-              @timestamp = Flipper::Util.timestamp
+              @timestamp = Flipper::Timestamp.generate
               @raw_events = data.fetch("events") { [] }
               @events = @raw_events.map { |hash| Flipper::Event.from_hash(hash) }
 

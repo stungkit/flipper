@@ -1,7 +1,8 @@
 require 'helper'
+require 'flipper/adapters/http/client'
 
-RSpec.describe Flipper::Util do
-  describe '#url_join' do
+RSpec.describe Flipper::Adapters::Http::Client do
+  describe '#url_for' do
     it 'works for url and path' do
       expect(described_class.url_for("https://foo.com", "bar"))
         .to eq("https://foo.com/bar")

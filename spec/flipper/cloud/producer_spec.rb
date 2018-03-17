@@ -18,7 +18,7 @@ RSpec.describe Flipper::Cloud::Producer do
         "flipper_id" => "User;23",
         "result" => "true",
       },
-      timestamp: Flipper::Util.timestamp,
+      timestamp: Flipper::Timestamp.generate,
     }
     Flipper::Event.new(attributes)
   end

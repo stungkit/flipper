@@ -1,3 +1,4 @@
+require "flipper/timestamp"
 require "flipper/instrumenters/noop"
 
 module Flipper
@@ -29,7 +30,7 @@ module Flipper
             "feature" => payload[:feature_name].to_s,
             "result" => payload[:result].to_s,
           },
-          timestamp: Flipper::Util.timestamp,
+          timestamp: Flipper::Timestamp.generate,
         }
 
         thing = payload[:thing]
