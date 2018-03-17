@@ -84,7 +84,7 @@ module Flipper
               end
 
               if @platform_version.nil?
-                @errors << ["Flipper-Platform Version is required"]
+                @errors << ["Flipper-Platform-Version is required"]
               end
             end
 
