@@ -43,8 +43,9 @@ RSpec.describe Flipper::Cloud do
       expect(headers['FEATURE_FLIPPER_TOKEN']).to eq(token)
     end
 
-    it 'uses noop instrumenter' do
-      expect(@instance.instrumenter).to be(Flipper::Instrumenters::Noop)
+    it 'uses cloud instrumenter wrapping noop' do
+      expect(@instance.instrumenter).to be_instance_of(Flipper::Cloud::Instrumenter)
+      expect(@instance.instrumenter.instrumenter).to be(Flipper::Instrumenters::Noop)
     end
   end
 
@@ -68,9 +69,10 @@ RSpec.describe Flipper::Cloud do
   end
 
   it 'can set instrumenter' do
-    instrumenter = ActiveSupport::Notifications
+    instrumenter = Flipper::Instrumenters::Memory.new
     instance = described_class.new('asdf', instrumenter: instrumenter)
-    expect(instance.instrumenter).to be(instrumenter)
+    expect(instance.instrumenter).to be_instance_of(Flipper::Cloud::Instrumenter)
+    expect(instance.instrumenter.instrumenter).to be(instrumenter)
   end
 
   it 'allows wrapping adapter with another adapter like the instrumenter' do

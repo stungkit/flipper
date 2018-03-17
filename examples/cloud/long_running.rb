@@ -1,7 +1,6 @@
 require File.expand_path('../../example_setup', __FILE__)
 
 require 'flipper/cloud'
-require 'active_support/notifications'
 
 token = ENV.fetch("TOKEN") { abort "TOKEN environment variable not set." }
 feature_name = ENV.fetch("FEATURE") { "testing" }.to_sym
@@ -11,7 +10,6 @@ Flipper.configure do |config|
     Flipper::Cloud.new(token) do |cloud|
       cloud.url = "http://localhost:5000/adapter"
       cloud.debug_output = STDOUT
-      cloud.instrumenter = ActiveSupport::Notifications
     end
   end
 end

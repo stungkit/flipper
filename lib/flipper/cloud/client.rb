@@ -2,6 +2,7 @@ require "delegate"
 require "flipper/event"
 require "flipper/util"
 require "flipper/cloud/producer"
+require "flipper/cloud/instrumenter"
 
 module Flipper
   module Cloud
@@ -14,15 +15,18 @@ module Flipper
         @configuration = configuration
         @producer = build_producer
         @flipper = build_flipper
-
-        connect_producer_to_instrumentation
         super @flipper
       end
 
       private
 
       def build_flipper
-        Flipper.new(configuration.adapter, instrumenter: configuration.instrumenter)
+        instrumenter_options = {
+          instrumenter: configuration.instrumenter,
+          producer: @producer,
+        }
+        instrumenter = Cloud::Instrumenter.new(instrumenter_options)
+        Flipper.new(configuration.adapter, instrumenter: instrumenter)
       end
 
       def build_producer
@@ -33,26 +37,6 @@ module Flipper
         provided_producer_options = @configuration.producer_options
         producer_options = default_producer_options.merge(provided_producer_options)
         Producer.new(producer_options)
-      end
-
-      def connect_producer_to_instrumentation
-        configuration.instrumenter.subscribe(Flipper::Feature::InstrumentationName) do |*args|
-          _name, _start, _finish, _id, payload = args
-          attributes = {
-            type: "enabled",
-            dimensions: {
-              "feature" => payload[:feature_name].to_s,
-              "result" => payload[:result].to_s,
-            },
-            timestamp: Flipper::Util.timestamp,
-          }
-
-          thing = payload[:thing]
-          attributes[:dimensions]["flipper_id"] = thing.value if thing
-
-          event = Flipper::Event.new(attributes)
-          @producer.produce event
-        end
       end
     end
   end
