@@ -22,11 +22,11 @@ module Flipper
 
       def build_flipper
         instrumenter_options = {
-          instrumenter: configuration.instrumenter,
+          instrumenter: @configuration.instrumenter,
           producer: @producer,
         }
         instrumenter = Cloud::Instrumenter.new(instrumenter_options)
-        Flipper.new(configuration.adapter, instrumenter: instrumenter)
+        Flipper.new(@configuration.adapter, instrumenter: instrumenter)
       end
 
       def build_producer
