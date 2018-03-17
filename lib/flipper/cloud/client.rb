@@ -11,8 +11,8 @@ module Flipper
       attr_reader :flipper
       attr_reader :producer
 
-      def initialize(configuration:)
-        @configuration = configuration
+      def initialize(options = {})
+        @configuration = options.fetch(:configuration)
         @producer = build_producer
         @flipper = build_flipper
         super @flipper
