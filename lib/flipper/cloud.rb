@@ -13,7 +13,6 @@ module Flipper
     def self.new(token, options = {})
       configuration = Configuration.new(options.merge(token: token))
       yield configuration if block_given?
-      configuration.freeze
       Client.new(configuration: configuration)
     end
   end
