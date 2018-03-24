@@ -4,6 +4,7 @@ module Flipper
   class RetryStrategy
     attr_reader :limit
     attr_reader :sleep
+    attr_reader :raise_at_limit
     attr_reader :base
     attr_reader :max_delay
     attr_reader :instrumenter
@@ -15,6 +16,7 @@ module Flipper
       @sleep = options.fetch(:sleep, true)
       @base = options.fetch(:base, 0.5)
       @max_delay = options.fetch(:max_delay, 2.0)
+      @raise_at_limit = options.fetch(:raise_at_limit, false)
       @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
     end
 
@@ -28,12 +30,19 @@ module Flipper
         yield
       rescue => exception
         payload = {
+          context: "RetryStrategy#call",
           exception: exception,
           attempts: attempts,
         }
-        @instrumenter.instrument("retry_strategy_exception.flipper", payload)
+        @instrumenter.instrument("exception.flipper", payload)
 
-        raise if attempts >= @limit
+        if attempts >= @limit
+          if @raise_at_limit
+            raise
+          else
+            return
+          end
+        end
         ::Kernel.sleep sleep_for_attempts(attempts) if @sleep
 
         retry

@@ -24,9 +24,7 @@ RSpec.describe Flipper::Adapters::Sync::Synchronizer do
 
     expect { subject.call }.not_to raise_error
 
-    events = instrumenter.events.select do |event|
-      event.name == "synchronizer_exception.flipper"
-    end
+    events = instrumenter.events_by_name("exception.flipper")
     expect(events.size).to be(1)
 
     event = events[0]

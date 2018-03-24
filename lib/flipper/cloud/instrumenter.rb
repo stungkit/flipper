@@ -39,7 +39,7 @@ module Flipper
         event = Flipper::Event.new(attributes)
         @producer.produce event
       rescue => exception
-        @instrumenter.instrument("producer_exception.flipper", exception: exception)
+        @instrumenter.instrument("exception.flipper", exception: exception)
       end
     end
   end

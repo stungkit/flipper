@@ -79,29 +79,7 @@ RSpec.describe Flipper::Cloud::Producer do
     subject.shutdown
   end
 
-  it 'instruments producer response errors' do
-    stub_request(:post, "https://www.featureflipper.com/adapter/events")
-      .to_return(status: 500)
-    subject.produce(event)
-    subject.shutdown
-
-    submission_event = instrumenter.event_by_name("producer_response_error.flipper")
-    expect(submission_event).not_to be_nil
-    expect(submission_event.payload[:response]).to be_instance_of(Net::HTTPInternalServerError)
-  end
-
-  it 'instruments producer exceptions' do
-    exception = StandardError.new
-    stub_request(:post, "https://www.featureflipper.com/adapter/events")
-      .to_raise(exception)
-    subject.produce(event)
-    subject.shutdown
-
-    exception_event = instrumenter.event_by_name("producer_exception.flipper")
-    expect(exception_event.payload.fetch(:exception)).to be(exception)
-  end
-
-  it 'retries submission exceptions up to configured limit' do
+  it 'retries requests that error up to configured limit' do
     retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
     producer_options = {
       client: client,
@@ -116,33 +94,28 @@ RSpec.describe Flipper::Cloud::Producer do
     instance.produce(event)
     instance.shutdown
 
-    events = instrumenter.events_by_name("retry_strategy_exception.flipper")
+    events = instrumenter.events_by_name("exception.flipper")
     expect(events.size).to be(retry_strategy.limit)
-
-    events = instrumenter.events_by_name("producer_exception.flipper")
-    expect(events.size).to be(1)
   end
 
-  it 'retries 5xx response statuses up to configured limit and instruments error' do
-    (500..599).each do |status|
-      instrumenter.reset
+  it 'retries 5xx response statuses up to configured limit' do
+    instrumenter.reset
 
-      retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
-      producer_options = {
-        client: client,
-        instrumenter: instrumenter,
-        retry_strategy: retry_strategy,
-      }
-      instance = described_class.new(producer_options)
+    retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
+    producer_options = {
+      client: client,
+      instrumenter: instrumenter,
+      retry_strategy: retry_strategy,
+    }
+    instance = described_class.new(producer_options)
 
-      stub_request(:post, "https://www.featureflipper.com/adapter/events")
-        .to_return(status: status)
+    stub_request(:post, "https://www.featureflipper.com/adapter/events")
+      .to_return(status: 500)
 
-      instance.produce(event)
-      instance.shutdown
+    instance.produce(event)
+    instance.shutdown
 
-      events = instrumenter.events_by_name("producer_response_error.flipper")
-      expect(events.size).to be(retry_strategy.limit)
-    end
+    events = instrumenter.events_by_name("exception.flipper")
+    expect(events.size).to be(retry_strategy.limit)
   end
 end

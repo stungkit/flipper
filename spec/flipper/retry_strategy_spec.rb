@@ -19,21 +19,12 @@ RSpec.describe Flipper::RetryStrategy do
     expect(subject.max_delay).to be(2.0)
   end
 
-  it 'defaults instrumenter' do
-    expect(subject.instrumenter).to be(Flipper::Instrumenters::Noop)
+  it 'defaults raise_at_limit' do
+    expect(subject.raise_at_limit).to be(false)
   end
 
-  it 'instruments retries' do
-    instrumenter = Flipper::Instrumenters::Memory.new
-    instance = described_class.new(instrumenter: instrumenter, sleep: false)
-
-    begin
-      instance.call { raise }
-      raise "should not get here"
-    rescue
-      events = instrumenter.events_by_name("retry_strategy_exception.flipper")
-      expect(events.size).to be(instance.limit)
-    end
+  it 'defaults instrumenter' do
+    expect(subject.instrumenter).to be(Flipper::Instrumenters::Noop)
   end
 
   describe '#call' do
@@ -44,18 +35,42 @@ RSpec.describe Flipper::RetryStrategy do
       expect { subject.call }.to raise_error(ArgumentError)
     end
 
-    it 'retries up to limit then raises' do
-      retry_strategy = described_class.new(sleep: false)
-      expect { retry_strategy.call { raiser.call } }.to raise_error(RuntimeError)
+    it 'retries up to limit and instruments errors' do
+      instrumenter = Flipper::Instrumenters::Memory.new
+      retry_strategy = described_class.new(sleep: false, instrumenter: instrumenter)
+      retry_strategy.call { raiser.call }
+
+      events = instrumenter.events_by_name("exception.flipper")
+      expect(events.size).to be(retry_strategy.limit)
     end
 
-    it 'does not raise if succeeds prior to limit' do
-      retry_strategy = described_class.new(sleep: false)
+    it 'returns block value if succeeds prior to limit' do
+      instrumenter = Flipper::Instrumenters::Memory.new
+      retry_strategy = described_class.new(sleep: false, instrumenter: instrumenter)
       results = []
       (retry_strategy.limit - 1).times { results << raiser }
       results << succeeder
+
       call_result = retry_strategy.call { results.shift.call }
       expect(call_result).to be(:return_value)
+
+      events = instrumenter.events_by_name("exception.flipper")
+      expect(events.size).to be(retry_strategy.limit - 1)
+    end
+
+    it 'raises if limit hit and raise_at_limit is true' do
+      instrumenter = Flipper::Instrumenters::Memory.new
+      retry_strategy_options = {
+        sleep: false,
+        raise_at_limit: true,
+        instrumenter: instrumenter,
+      }
+
+      retry_strategy = described_class.new(retry_strategy_options)
+      expect { retry_strategy.call { raiser.call } }.to raise_error(RuntimeError)
+
+      events = instrumenter.events_by_name("exception.flipper")
+      expect(events.size).to be(retry_strategy.limit)
     end
   end
 end

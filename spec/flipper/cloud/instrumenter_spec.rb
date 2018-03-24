@@ -39,12 +39,10 @@ RSpec.describe Flipper::Cloud::Instrumenter do
     expect { subject.instrument(Flipper::Feature::InstrumentationName, payload) }
       .not_to raise_error
 
-    producer_exception_events = instrumenter.events.select do |event|
-      event.name == "producer_exception.flipper"
-    end
+    exception_events = instrumenter.events_by_name("exception.flipper")
+    expect(exception_events.size).to be(1)
 
-    expect(producer_exception_events.size).to be(1)
-    payload = producer_exception_events.first.payload
+    payload = exception_events.first.payload
     expect(payload.fetch(:exception)).to be(exception)
   end
 

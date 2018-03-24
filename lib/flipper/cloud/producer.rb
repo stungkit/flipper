@@ -1,7 +1,7 @@
-require "json"
 require "thread"
 require "flipper/instrumenters/noop"
 require "flipper/retry_strategy"
+require "flipper/cloud/request"
 
 module Flipper
   module Cloud
@@ -55,7 +55,7 @@ module Flipper
           begin
             @worker_thread.join @shutdown_timeout
           rescue => exception
-            instrument_exception exception
+            @instrumenter.instrument("exception.flipper", exception: exception)
           end
         end
 
@@ -79,21 +79,25 @@ module Flipper
 
           update_pid
           @worker_thread = Thread.new do
-            events = []
+            request_options = {
+              client: @client,
+              limit: @batch_size,
+              retry_strategy: @retry_strategy,
+              instrumenter: @instrumenter,
+            }
+            request = Request.new(request_options)
 
             loop do
               operation, item = @queue.pop
 
               case operation
               when :shutdown
-                submit events
-                events.clear
+                request.perform
                 break
               when :produce
-                events << item
+                request << item
               when :deliver
-                submit events
-                events.clear
+                request.perform
               else
                 raise "unknown operation: #{operation}"
               end
@@ -143,49 +147,6 @@ module Flipper
       # forked or something and should likely re-create threads.
       def pid_matches?
         @pid == Process.pid
-      end
-
-      def submit(events)
-        events.compact!
-        return if events.empty?
-
-        events.each_slice(@batch_size) do |slice|
-          body = JSON.generate(events: slice.map(&:as_json))
-          post body
-        end
-
-        nil
-      rescue => exception
-        instrument_exception(exception)
-      end
-
-      class SubmissionError < StandardError
-        def self.retry?(status)
-          (500..599).cover?(status)
-        end
-
-        attr_reader :status
-
-        def initialize(status)
-          @status = status
-          super("Submission resulted in #{status} http status")
-        end
-      end
-
-      def post(body)
-        @retry_strategy.call do
-          response = @client.post("/events", body: body)
-          status = response.code.to_i
-
-          if status != 201
-            @instrumenter.instrument("producer_response_error.flipper", response: response)
-            raise SubmissionError, status if SubmissionError.retry?(status)
-          end
-        end
-      end
-
-      def instrument_exception(exception)
-        @instrumenter.instrument("producer_exception.flipper", exception: exception)
       end
 
       def update_pid

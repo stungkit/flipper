@@ -156,7 +156,7 @@ RSpec.describe Flipper::Cloud do
       subject.enabled?(:foo, actor)
       subject.producer.shutdown
 
-      events = instrumenter.events_by_name("producer_exception.flipper")
+      events = instrumenter.events_by_name("exception.flipper")
       expect(events).to eq([])
 
       events = instrumenter.events_by_name("producer_submission_error.flipper")
