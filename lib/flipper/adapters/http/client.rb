@@ -31,8 +31,8 @@ module Flipper
           end
 
           path_uri = URI(path)
-          uri.path += "/#{path_uri.path}".squeeze("/")
-          uri.path.squeeze!("/")
+          uri.path += "/#{path_uri.path}".squeeze("/".freeze)
+          uri.path.squeeze!("/".freeze)
 
           if path_uri.query
             if uri.query
@@ -41,7 +41,7 @@ module Flipper
               uri.query = path_uri.query
             end
 
-            uri.query.squeeze!("&")
+            uri.query.squeeze!("&".freeze)
           end
 
           uri.to_s
@@ -103,7 +103,7 @@ module Flipper
 
         def build_request(http_method, uri, headers, options)
           request_headers = {
-            "FLIPPER_TIMESTAMP" => Flipper::Timestamp.generate.to_s,
+            "FLIPPER_TIMESTAMP".freeze => Flipper::Timestamp.generate.to_s,
           }.merge(headers)
           request = http_method.new(uri.request_uri)
           request.initialize_http_header(request_headers)
