@@ -1,5 +1,6 @@
 require 'helper'
 require 'flipper/retry_strategy'
+require 'flipper/instrumenters/memory'
 
 RSpec.describe Flipper::RetryStrategy do
   it 'defaults limit' do
@@ -20,6 +21,19 @@ RSpec.describe Flipper::RetryStrategy do
 
   it 'defaults instrumenter' do
     expect(subject.instrumenter).to be(Flipper::Instrumenters::Noop)
+  end
+
+  it 'instruments retries' do
+    instrumenter = Flipper::Instrumenters::Memory.new
+    instance = described_class.new(instrumenter: instrumenter, sleep: false)
+
+    begin
+      instance.call { raise }
+      flunk # should not get here
+    rescue
+      events = instrumenter.events_by_name("retry_strategy_exception.flipper")
+      expect(events.size).to be(instance.limit)
+    end
   end
 
   describe '#call' do
