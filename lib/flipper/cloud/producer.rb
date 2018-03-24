@@ -9,8 +9,6 @@ module Flipper
     class Producer
       extend Forwardable
 
-      SHUTDOWN = Object.new
-
       attr_reader :client
       attr_reader :queue
       attr_reader :capacity
