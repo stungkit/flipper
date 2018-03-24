@@ -105,9 +105,10 @@ module Flipper
           request_headers = {
             "FLIPPER_TIMESTAMP" => Flipper::Timestamp.generate.to_s,
           }.merge(headers)
-          body = options[:body]
           request = http_method.new(uri.request_uri)
           request.initialize_http_header(request_headers)
+
+          body = options[:body]
           request.body = body if body
 
           if @basic_auth_username && @basic_auth_password
