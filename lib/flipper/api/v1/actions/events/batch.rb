@@ -37,7 +37,11 @@ module Flipper
             end
 
             def data
-              @data ||= JSON.parse(request.body.read)
+              @data ||= begin
+                JSON.parse(request.body.read)
+              ensure
+                request.body.rewind
+              end
             end
 
             private
