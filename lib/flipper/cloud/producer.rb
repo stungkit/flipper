@@ -176,14 +176,10 @@ module Flipper
           status = response.code.to_i
 
           if status != 201
-            instrument_response_error(response)
+            @instrumenter.instrument("producer_response_error.flipper", response: response)
             raise SubmissionError, status if SubmissionError.retry?(status)
           end
         end
-      end
-
-      def instrument_response_error(response)
-        @instrumenter.instrument("producer_response_error.flipper", response: response)
       end
 
       def instrument_exception(exception)
