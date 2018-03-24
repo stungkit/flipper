@@ -6,6 +6,8 @@ require "flipper/retry_strategy"
 module Flipper
   module Cloud
     class Producer
+      # TODO: client, batch size and retry strategy feel like they should be packed up
+      # together in a submitter/reporter object
       attr_reader :client
       attr_reader :queue
       attr_reader :capacity
