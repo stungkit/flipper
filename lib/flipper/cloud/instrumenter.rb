@@ -1,5 +1,4 @@
 require "delegate"
-require "flipper/timestamp"
 require "flipper/instrumenters/noop"
 
 module Flipper
@@ -27,18 +26,17 @@ module Flipper
         return unless name == Flipper::Feature::InstrumentationName
         return unless :enabled? == payload[:operation]
 
+        dimensions = {
+          "feature" => payload[:feature_name].to_s,
+          "result" => payload[:result].to_s,
+        }
+        thing = payload[:thing]
+        dimensions["flipper_id"] = thing.value if thing
+
         attributes = {
           type: "enabled",
-          dimensions: {
-            "feature" => payload[:feature_name].to_s,
-            "result" => payload[:result].to_s,
-          },
-          timestamp: Flipper::Timestamp.generate,
+          dimensions: dimensions,
         }
-
-        thing = payload[:thing]
-        attributes[:dimensions]["flipper_id"] = thing.value if thing
-
         event = Flipper::Event.new(attributes)
         @producer.produce event
       rescue => exception
