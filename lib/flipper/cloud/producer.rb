@@ -2,14 +2,12 @@ require "json"
 require "thread"
 require "forwardable"
 require "flipper/instrumenters/noop"
+require "flipper/retry_strategy"
 
 module Flipper
   module Cloud
     class Producer
       extend Forwardable
-
-      # Private: Allow disabling sleep between retries for tests.
-      attr_accessor :retry_sleep_enabled
 
       SHUTDOWN = Object.new
 
@@ -19,8 +17,7 @@ module Flipper
       attr_reader :batch_size
       attr_reader :flush_interval
       attr_reader :shutdown_timeout
-      attr_reader :retry_limit
-      attr_reader :retry_sleep_enabled
+      attr_reader :retry_strategy
       attr_reader :instrumenter
 
       def initialize(options = {})
@@ -30,9 +27,8 @@ module Flipper
         @batch_size = options.fetch(:batch_size, 1_000)
         @flush_interval = options.fetch(:flush_interval, 10)
         @shutdown_timeout = options.fetch(:shutdown_timeout, 5)
-        @retry_limit = options.fetch(:retry_limit, 10)
-        @retry_sleep_enabled = options.fetch(:retry_sleep_enabled, true)
         @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
+        @retry_strategy = options.fetch(:retry_strategy) { RetryStrategy.new }
 
         if @flush_interval <= 0
           raise ArgumentError, "flush_interval must be greater than zero"
@@ -46,10 +42,9 @@ module Flipper
       def produce(event)
         ensure_threads_alive
 
+        # TODO: Log statistics about dropped events and send to cloud?
         if @queue.size < @capacity
           @queue << [:produce, event]
-        else # rubocop:disable Style/EmptyElse
-          # TODO: Log statistics about dropped events and send to cloud?
         end
 
         nil
@@ -171,16 +166,7 @@ module Flipper
       end
 
       def post(body)
-        on_error = lambda do |exception, _attempts|
-          instrument_exception(exception)
-        end
-
-        retry_options = {
-          limit: @retry_limit,
-          sleep_enabled: @retry_sleep_enabled,
-          on_error: on_error,
-        }
-        Util.with_retry(retry_options) do
+        @retry_strategy.call do
           response = @client.post("/events", body: body)
           status = response.code.to_i
 

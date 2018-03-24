@@ -1,6 +1,6 @@
 require "delegate"
 require "flipper/event"
-require "flipper/util"
+require "flipper/retry_strategy"
 require "flipper/cloud/producer"
 require "flipper/cloud/instrumenter"
 
@@ -33,6 +33,7 @@ module Flipper
         default_producer_options = {
           instrumenter: @configuration.instrumenter,
           client: @configuration.client,
+          retry_strategy: RetryStrategy.new,
         }
         provided_producer_options = @configuration.producer_options
         producer_options = default_producer_options.merge(provided_producer_options)

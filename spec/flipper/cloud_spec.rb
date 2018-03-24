@@ -5,7 +5,6 @@ require 'flipper/instrumenters/memory'
 require 'flipper/adapters/instrumented'
 require 'flipper/adapters/pstore'
 require 'rack/handler/webrick'
-require 'active_support/notifications'
 
 RSpec.describe Flipper::Cloud do
   before do
@@ -75,7 +74,7 @@ RSpec.describe Flipper::Cloud do
     expect(instance.instrumenter.instrumenter).to be(instrumenter)
   end
 
-  it 'allows wrapping adapter with another adapter like the instrumenter' do
+  it 'allows wrapping adapter with another adapter like the instrumented' do
     instance = described_class.new('asdf') do |config|
       config.adapter do |adapter|
         Flipper::Adapters::Instrumented.new(adapter)
@@ -104,20 +103,14 @@ RSpec.describe Flipper::Cloud do
   end
 
   context 'integration' do
-    let(:configuration) do
-      subject # make sure subject has been loaded to define @configuration
-      @configuration
-    end
+    let(:instrumenter) { Flipper::Instrumenters::Memory.new }
 
     subject do
       described_class.new("asdf") do |config|
-        @configuration = config
         config.url = "http://localhost:#{FLIPPER_SPEC_API_PORT}"
-        config.instrumenter = ActiveSupport::Notifications
+        config.instrumenter = instrumenter
       end
     end
-
-    let(:instrumenter) { subject.instrumenter }
 
     before(:all) do
       @event_receiver = Flipper::EventReceivers::Memory.new
@@ -154,20 +147,21 @@ RSpec.describe Flipper::Cloud do
     end
 
     it 'sends events to event_receiver in batches' do
-      errors = []
-      ActiveSupport::Notifications.subscribe(/producer_submission_.*\.flipper/) do |*args|
-        errors << args
-      end
-      actors = Array.new(5) { |i| Flipper::Actor.new("Flipper::Actor;#{i}") }
-      subject.enabled?(:foo, actors.sample)
-      subject.enabled?(:foo, actors.sample)
-      subject.enabled?(:foo, actors.sample)
-      subject.enabled?(:foo, actors.sample)
-      subject.enabled?(:foo, actors.sample)
-      subject.enabled?(:foo, actors.sample)
+      actor = Flipper::Actor.new("Flipper::Actor;1")
+      subject.enabled?(:foo, actor)
+      subject.enabled?(:foo, actor)
+      subject.enabled?(:foo, actor)
+      subject.enabled?(:foo, actor)
+      subject.enabled?(:foo, actor)
+      subject.enabled?(:foo, actor)
       subject.producer.shutdown
 
-      expect(errors).to eq([])
+      events = instrumenter.events_by_name("producer_exception.flipper")
+      expect(events).to eq([])
+
+      events = instrumenter.events_by_name("producer_submission_error.flipper")
+      expect(events).to eq([])
+
       expect(@event_receiver.size).to be(1)
       expect(subject.producer.queue.size).to be(0)
     end
