@@ -29,7 +29,7 @@ RSpec.describe Flipper::RetryStrategy do
 
     begin
       instance.call { raise }
-      flunk # should not get here
+      raise "should not get here"
     rescue
       events = instrumenter.events_by_name("retry_strategy_exception.flipper")
       expect(events.size).to be(instance.limit)
