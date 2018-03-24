@@ -102,10 +102,6 @@ module Flipper
         end
       end
 
-      def worker_running?
-        @worker_thread && @pid == Process.pid && @worker_thread.alive?
-      end
-
       def ensure_timer_running
         # If another thread is starting timer thread, then return early so this
         # thread can enqueue and move on with life.
@@ -129,8 +125,22 @@ module Flipper
         end
       end
 
+      def worker_running?
+        thread_healthy? @worker_thread
+      end
+
       def timer_running?
-        @timer_thread && @pid == Process.pid && @timer_thread.alive?
+        thread_healthy? @timer_thread
+      end
+
+      def thread_healthy?(thread)
+        thread && pid_matches? && thread.alive?
+      end
+
+      # Does the initialized pid match the current pid. If not, then we have
+      # forked or something and should likely re-create threads.
+      def pid_matches?
+        @pid == Process.pid
       end
 
       def submit(events)
