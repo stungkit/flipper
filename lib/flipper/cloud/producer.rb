@@ -7,8 +7,6 @@ module Flipper
   module Cloud
     # Internal: Do not use this directly outside of this gem.
     class Producer
-      # TODO: client, batch size and retry strategy feel like they should be packed up
-      # together in a submitter/reporter object
       attr_reader :client
       attr_reader :queue
       attr_reader :capacity
@@ -34,7 +32,8 @@ module Flipper
 
         @worker_mutex = Mutex.new
         @timer_mutex = Mutex.new
-        update_pid
+        update_worker_pid
+        update_timer_pid
       end
 
       def produce(event)
@@ -78,7 +77,7 @@ module Flipper
         begin
           return if worker_running?
 
-          update_pid
+          update_worker_pid
           @worker_thread = Thread.new do
             request_options = {
               client: @client,
@@ -98,6 +97,9 @@ module Flipper
               when :produce
                 request << item
               when :deliver
+                # TODO: don't do a deliver if a deliver happened for some other
+                # reason recently like the request was full or a manual deliver
+                # was called
                 request.perform
               else
                 raise "unknown operation: #{operation}"
@@ -117,13 +119,11 @@ module Flipper
         begin
           return if timer_running?
 
-          update_pid
+          update_timer_pid
           @timer_thread = Thread.new do
             loop do
               sleep @flush_interval
 
-              # TODO: don't do a deliver if a deliver happened for some other
-              # reason recently
               @queue << [:deliver, nil]
             end
           end
@@ -132,26 +132,26 @@ module Flipper
         end
       end
 
+      # Is the worker thread assigned, alive and created in the same process that
+      # we are currently in.
       def worker_running?
-        thread_healthy? @worker_thread
+        @worker_thread && @worker_pid == Process.pid && @worker_thread.alive?
       end
 
+      # Is the timer thread assigned, alive and created in the same process that
+      # we are currently in.
       def timer_running?
-        thread_healthy? @timer_thread
+        @timer_thread && @timer_pid == Process.pid && @timer_thread.alive?
       end
 
-      def thread_healthy?(thread)
-        thread && pid_matches? && thread.alive?
+      # Update the pid of the process that started the timer thread.
+      def update_timer_pid
+        @timer_pid = Process.pid
       end
 
-      # Does the initialized pid match the current pid. If not, then we have
-      # forked or something and should likely re-create threads.
-      def pid_matches?
-        @pid == Process.pid
-      end
-
-      def update_pid
-        @pid = Process.pid
+      # Update the pid of the process that started the worker thread.
+      def update_worker_pid
+        @worker_pid = Process.pid
       end
     end
   end
