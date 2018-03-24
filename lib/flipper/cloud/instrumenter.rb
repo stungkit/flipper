@@ -1,16 +1,18 @@
+require "delegate"
 require "flipper/timestamp"
 require "flipper/instrumenters/noop"
 
 module Flipper
   module Cloud
     # Internal: Do not use this directly outside of this gem.
-    class Instrumenter
+    class Instrumenter < SimpleDelegator
       attr_reader :producer
       attr_reader :instrumenter
 
       def initialize(options = {})
         @producer = options.fetch(:producer)
         @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
+        super @instrumenter
       end
 
       def instrument(name, payload = {}, &block)
