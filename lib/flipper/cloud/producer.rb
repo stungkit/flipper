@@ -5,6 +5,7 @@ require "flipper/cloud/request"
 
 module Flipper
   module Cloud
+    # Internal: Do not use this directly outside of this gem.
     class Producer
       # TODO: client, batch size and retry strategy feel like they should be packed up
       # together in a submitter/reporter object

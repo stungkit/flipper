@@ -3,6 +3,7 @@ require "flipper/instrumenters/noop"
 
 module Flipper
   module Cloud
+    # Internal: Do not use this directly outside of this gem.
     class Instrumenter
       attr_reader :producer
       attr_reader :instrumenter

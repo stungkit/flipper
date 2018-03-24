@@ -4,6 +4,7 @@ require "flipper/retry_strategy"
 
 module Flipper
   module Cloud
+    # Internal: Do not use this directly outside of this gem.
     class Request
       class ResponseError < StandardError
         def self.retry?(status)

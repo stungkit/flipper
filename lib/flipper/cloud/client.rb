@@ -6,6 +6,7 @@ require "flipper/cloud/instrumenter"
 
 module Flipper
   module Cloud
+    # Internal: Do not use this directly outside of this gem.
     class Client < SimpleDelegator
       attr_reader :configuration
       attr_reader :flipper
