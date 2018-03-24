@@ -31,8 +31,8 @@ module Flipper
 
       def build_producer
         default_producer_options = {
-          instrumenter: @configuration.instrumenter,
           client: @configuration.client,
+          instrumenter: @configuration.instrumenter,
           retry_strategy: RetryStrategy.new,
         }
         provided_producer_options = @configuration.producer_options
