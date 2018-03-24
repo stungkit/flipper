@@ -1,14 +1,11 @@
 require "json"
 require "thread"
-require "forwardable"
 require "flipper/instrumenters/noop"
 require "flipper/retry_strategy"
 
 module Flipper
   module Cloud
     class Producer
-      extend Forwardable
-
       attr_reader :client
       attr_reader :queue
       attr_reader :capacity
