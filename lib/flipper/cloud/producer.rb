@@ -7,13 +7,38 @@ module Flipper
   module Cloud
     # Internal: Do not use this directly outside of this gem.
     class Producer
+      # Public: The Flipper::Adapters::Http::Client instance to use to make requests.
       attr_reader :client
+
+      # Public: The queue that stores events until they can be eventually sent
+      # to cloud.
       attr_reader :queue
+
+      # Public: The Integer number of events to buffer in the queue. If the
+      # queue reaches this size, any more events will be discarded.
+      # Default is 10,000.
       attr_reader :capacity
+
+      # Public: The Integer maximum number of events to send to cloud in a
+      # single request. Once this many events have been batched up, a request
+      # will be submitted even if the flush_interval has not been reached.
+      # Default is 1,000.
       attr_reader :batch_size
+
+      # Public: The Integer or Float number of seconds to wait and batch up
+      # events. Once this interval is reached, the batch of events will be
+      # submitted to cloud even if less than the batch_size.
       attr_reader :flush_interval
+
+      # Public: The Integer or Float maximum number of seconds to wait when
+      # attempting graceful shutdown of the producer.
       attr_reader :shutdown_timeout
+
+      # Public: The retry strategy to use when there are errors making requests
+      # to cloud. Default is new Flipper::RetryStrategy instance.
       attr_reader :retry_strategy
+
+      # Public: The instrumenter to use. Default is Flipper::Instrumenters::Noop.
       attr_reader :instrumenter
 
       def initialize(options = {})
