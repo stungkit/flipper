@@ -30,7 +30,7 @@ module Flipper
         yield
       rescue => exception
         payload = {
-          context: "RetryStrategy#call",
+          context: "Flipper::RetryStrategy#call",
           exception: exception,
           attempts: attempts,
         }

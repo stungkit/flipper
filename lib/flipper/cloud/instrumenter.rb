@@ -16,7 +16,17 @@ module Flipper
 
       def instrument(name, payload = {}, &block)
         result = @instrumenter.instrument(name, payload, &block)
-        produce name, payload
+
+        begin
+          produce name, payload
+        rescue => exception
+          payload = {
+            exception: exception,
+            context: "Flipper::Cloud::Instrumenter#instrument",
+          }
+          @instrumenter.instrument("exception.flipper", payload)
+        end
+
         result
       end
 
@@ -39,8 +49,6 @@ module Flipper
         }
         event = Flipper::Event.new(attributes)
         @producer.produce event
-      rescue => exception
-        @instrumenter.instrument("exception.flipper", exception: exception)
       end
     end
   end

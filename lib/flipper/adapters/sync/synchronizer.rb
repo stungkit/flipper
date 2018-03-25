@@ -40,7 +40,11 @@ module Flipper
           features_to_add = remote_get_all.keys - local_get_all.keys
           features_to_add.each { |key| Feature.new(key, @local).add }
         rescue => exception
-          @instrumenter.instrument("exception.flipper", exception: exception)
+          payload = {
+            exception: exception,
+            context: "Flipper::Adaptes::Sync::Synchronizer#sync",
+          }
+          @instrumenter.instrument("exception.flipper", payload)
         end
       end
     end

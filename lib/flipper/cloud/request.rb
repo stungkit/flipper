@@ -47,7 +47,11 @@ module Flipper
 
         nil
       rescue => exception
-        @instrumenter.instrument("exception.flipper", exception: exception)
+        payload = {
+          exception: exception,
+          context: "Flipper::Cloud::Request#perform",
+        }
+        @instrumenter.instrument("exception.flipper", payload)
       ensure
         reset
       end

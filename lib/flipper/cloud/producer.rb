@@ -55,7 +55,11 @@ module Flipper
           begin
             @worker_thread.join @shutdown_timeout
           rescue => exception
-            @instrumenter.instrument("exception.flipper", exception: exception)
+            payload = {
+              exception: exception,
+              context: "Flipper::Cloud::Producer#shutdown",
+            }
+            @instrumenter.instrument("exception.flipper", payload)
           end
         end
 
