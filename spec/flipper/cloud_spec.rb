@@ -159,9 +159,6 @@ RSpec.describe Flipper::Cloud do
       events = instrumenter.events_by_name("exception.flipper")
       expect(events).to eq([])
 
-      events = instrumenter.events_by_name("producer_submission_error.flipper")
-      expect(events).to eq([])
-
       expect(@event_receiver.size).to be(1)
       expect(subject.producer.queue.size).to be(0)
     end
