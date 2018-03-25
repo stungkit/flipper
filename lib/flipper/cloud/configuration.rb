@@ -40,9 +40,8 @@ module Flipper
       #  configuration.instrumenter = ActiveSupport::Notifications
       attr_accessor :instrumenter
 
-      # Public: The options passed to the default producer instance if no
-      # producer is provided. See Producer#initialize for more. If producer is
-      # provided, these options are disregarded.
+      # Public: The Hash of options for the producer.
+      # See Producer#initialize for valid keys.
       attr_accessor :producer_options
 
       # Public: Local adapter that all reads should go to in order to ensure
