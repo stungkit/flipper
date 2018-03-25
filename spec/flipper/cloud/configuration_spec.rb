@@ -95,4 +95,29 @@ RSpec.describe Flipper::Cloud::Configuration do
     instance = described_class.new(options)
     expect(instance.producer_options[:flush_interval]).to eq(60)
   end
+
+  it 'configures http client' do
+    client_options = {
+      url: "https://example.com",
+      read_timeout: 99,
+      open_timeout: 99,
+      debug_output: STDOUT,
+    }
+    instance = described_class.new(required_options.merge(client_options))
+    client = instance.client
+
+    expect(client.url).to eq(client_options.fetch(:url))
+    expect(client.read_timeout).to be(99)
+    expect(client.open_timeout).to be(99)
+    expect(client.debug_output).to be(STDOUT)
+
+    expect(client.headers["FEATURE_FLIPPER_TOKEN"]).to eq(required_options.fetch(:token))
+    expect(client.headers["FLIPPER_VERSION"]).to eq(Flipper::VERSION)
+    expect(client.headers["FLIPPER_PLATFORM"]).to eq("ruby")
+    expect(client.headers["FLIPPER_PLATFORM_VERSION"]).to eq(RUBY_VERSION)
+    hostname = Socket.gethostbyname(Socket.gethostname).first
+    expect(client.headers["FLIPPER_HOSTNAME"]).to eq(hostname)
+    expect(client.headers["FLIPPER_PID"]).to eq(Process.pid.to_s)
+    expect(client.headers["FLIPPER_THREAD"]).to eq(Thread.current.object_id.to_s)
+  end
 end
