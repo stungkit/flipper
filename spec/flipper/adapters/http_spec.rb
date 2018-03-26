@@ -7,32 +7,11 @@ require 'rack/handler/webrick'
 RSpec.describe Flipper::Adapters::Http do
   context 'adapter' do
     subject do
-      described_class.new(url: "http://localhost:#{@port}")
+      described_class.new(url: "http://localhost:#{@server.port}")
     end
 
     before :all do
-      @port = TCPServer.new('127.0.0.1', 0).addr[1]
-      dir = FlipperRoot.join('tmp').tap(&:mkpath)
-      log_path = dir.join('flipper_adapters_http_spec.log')
-      @pstore_file = dir.join('flipper.pstore')
-      @pstore_file.unlink if @pstore_file.exist?
-
-      api_adapter = Flipper::Adapters::PStore.new(@pstore_file)
-      flipper_api = Flipper.new(api_adapter)
-      app = Flipper::Api.app(flipper_api)
-      server_options = {
-        Port: @port,
-        StartCallback: -> { @started = true },
-        Logger: WEBrick::Log.new(log_path.to_s, WEBrick::Log::INFO),
-        AccessLog: [
-          [log_path.open('w'), WEBrick::AccessLog::COMBINED_LOG_FORMAT],
-        ],
-      }
-      @server = WEBrick::HTTPServer.new(server_options)
-      @server.mount '/', Rack::Handler::WEBrick, app
-
-      Thread.new { @server.start }
-      Timeout.timeout(1) { :wait until @started }
+      @server = TestServer.new
     end
 
     after :all do
@@ -40,7 +19,7 @@ RSpec.describe Flipper::Adapters::Http do
     end
 
     before(:each) do
-      @pstore_file.unlink if @pstore_file.exist?
+      @server.reset
     end
 
     it_should_behave_like 'a flipper adapter'
