@@ -1,9 +1,8 @@
-require 'helper'
-require 'flipper/event'
-require 'flipper/cloud'
-require 'flipper/cloud/configuration'
-require 'flipper/cloud/producer'
-require 'flipper/instrumenters/memory'
+require "helper"
+require "flipper/event"
+require "flipper/cloud/configuration"
+require "flipper/cloud/producer"
+require "flipper/instrumenters/memory"
 
 RSpec.describe Flipper::Cloud::Producer do
   let(:instrumenter) do
@@ -41,6 +40,7 @@ RSpec.describe Flipper::Cloud::Producer do
       flush_interval: 0.1,
       retry_strategy: Flipper::RetryStrategy.new(sleep: false),
       instrumenter: instrumenter,
+      automatic_shutdown: false,
     }
   end
 
@@ -132,5 +132,25 @@ RSpec.describe Flipper::Cloud::Producer do
 
     events = instrumenter.events_by_name("exception.flipper")
     expect(events.size).to be(retry_strategy.limit)
+  end
+
+  it 'flushes at exit' do
+    begin
+      server = TestServer.new
+      client = configuration.client(url: "http://localhost:#{server.port}")
+      producer_options[:client] = client
+      producer_options[:automatic_shutdown] = true
+      producer = described_class.new(producer_options)
+
+      pid = fork { producer.produce(event) }
+      Process.waitpid pid, 0
+
+      expect(server.event_receiver.size).to be(1)
+
+      event_posts = server.access_lines.select { |line| line =~ %r{POST /events} }
+      expect(event_posts.size).to be(1)
+    ensure
+      server.shutdown
+    end
   end
 end
