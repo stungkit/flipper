@@ -23,13 +23,15 @@ RSpec.describe Flipper::Cloud::Producer do
     Flipper::Event.new(attributes)
   end
 
-  let(:client) do
-    client_options = {
+  let(:configuration) do
+    options = {
       token: "asdf",
       url: "https://www.featureflipper.com/adapter",
     }
-    Flipper::Adapters::Http::Client.new(client_options)
+    Flipper::Cloud::Configuration.new(options)
   end
+
+  let(:client) { configuration.client }
 
   let(:producer_options) do
     {
