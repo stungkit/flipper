@@ -1,5 +1,4 @@
 require "delegate"
-require "flipper/event"
 require "flipper/retry_strategy"
 require "flipper/cloud/producer"
 require "flipper/cloud/instrumenter"
