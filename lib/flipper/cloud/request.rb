@@ -34,6 +34,8 @@ module Flipper
       end
 
       def perform
+        return if @events.empty?
+
         body = JSON.generate(events: @events.map(&:as_json))
 
         @retry_strategy.call do
