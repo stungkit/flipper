@@ -40,7 +40,7 @@ RSpec.describe Flipper::Cloud::Producer do
       flush_interval: 0.1,
       retry_strategy: Flipper::RetryStrategy.new(sleep: false),
       instrumenter: instrumenter,
-      automatic_shutdown: false,
+      shutdown_automatically: false,
     }
   end
 
@@ -139,7 +139,7 @@ RSpec.describe Flipper::Cloud::Producer do
       server = TestServer.new
       client = configuration.client(url: "http://localhost:#{server.port}")
       producer_options[:client] = client
-      producer_options[:automatic_shutdown] = true
+      producer_options[:shutdown_automatically] = true
       producer = described_class.new(producer_options)
 
       pid = fork { producer.produce(event) }
