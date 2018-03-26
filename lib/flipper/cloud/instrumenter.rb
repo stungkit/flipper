@@ -1,4 +1,6 @@
 require "delegate"
+require "flipper/event"
+require "flipper/feature"
 require "flipper/instrumenters/noop"
 
 module Flipper
