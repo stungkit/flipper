@@ -59,6 +59,10 @@ module Flipper
         @timer_mutex = Mutex.new
         update_worker_pid
         update_timer_pid
+
+        if options.fetch(:automatic_shutdown, true)
+          at_exit { shutdown }
+        end
       end
 
       def produce(event)
