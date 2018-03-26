@@ -41,10 +41,7 @@ module Flipper
         @retry_strategy.call do
           response = @client.post("/events", body: body)
           status = response.code.to_i
-
-          if status != 201
-            raise ResponseError, status if ResponseError.retry?(status)
-          end
+          raise ResponseError, status if ResponseError.retry?(status)
         end
 
         nil
