@@ -99,7 +99,7 @@ module Flipper
                    Socket.gethostname
                  end
 
-      def client
+      def client(options = {})
         client_options = {
           url: @url,
           read_timeout: @read_timeout,
@@ -114,7 +114,7 @@ module Flipper
             "FLIPPER_PID" => Process.pid.to_s,
             "FLIPPER_THREAD" => Thread.current.object_id.to_s,
           },
-        }
+        }.merge(options)
         Flipper::Adapters::Http::Client.new(client_options)
       end
 

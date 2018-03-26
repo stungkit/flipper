@@ -120,4 +120,16 @@ RSpec.describe Flipper::Cloud::Configuration do
     expect(client.headers["FLIPPER_PID"]).to eq(Process.pid.to_s)
     expect(client.headers["FLIPPER_THREAD"]).to eq(Thread.current.object_id.to_s)
   end
+
+  it 'allows customizing client options' do
+    client_options = {
+      url: "https://example.com",
+      read_timeout: 99,
+      open_timeout: 99,
+      debug_output: STDOUT,
+    }
+    instance = described_class.new(required_options.merge(client_options))
+    client = instance.client(url: "https://customized.com")
+    expect(client.url).to eq("https://customized.com")
+  end
 end
