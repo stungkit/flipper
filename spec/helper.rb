@@ -19,8 +19,6 @@ require 'flipper-api'
 
 Dir[FlipperRoot.join('spec/support/**/*.rb')].each { |f| require f }
 
-FLIPPER_SPEC_API_PORT = ENV.fetch('FLIPPER_SPEC_API_PORT', 9001).to_i
-
 RSpec.configure do |config|
   config.before(:example) do
     Flipper.unregister_groups
