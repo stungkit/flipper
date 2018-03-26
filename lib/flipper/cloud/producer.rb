@@ -64,9 +64,10 @@ module Flipper
       def produce(event)
         ensure_threads_alive
 
-        # TODO: Log statistics about dropped events and send to cloud?
         if @queue.size < @capacity
           @queue << [:produce, event]
+        else
+          @instrumenter.instrument("event_discarded.flipper")
         end
 
         nil

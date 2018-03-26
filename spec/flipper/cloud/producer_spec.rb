@@ -31,8 +31,8 @@ RSpec.describe Flipper::Cloud::Producer do
     Flipper::Adapters::Http::Client.new(client_options)
   end
 
-  subject do
-    producer_options = {
+  let(:producer_options) do
+    {
       client: client,
       capacity: 10,
       batch_size: 5,
@@ -40,6 +40,9 @@ RSpec.describe Flipper::Cloud::Producer do
       retry_strategy: Flipper::RetryStrategy.new(sleep: false),
       instrumenter: instrumenter,
     }
+  end
+
+  subject do
     described_class.new(producer_options)
   end
 
@@ -77,6 +80,16 @@ RSpec.describe Flipper::Cloud::Producer do
 
     5.times { subject.produce(event) }
     subject.shutdown
+  end
+
+  it 'instruments event being discarded when queue is full' do
+    instance = described_class.new(producer_options)
+    instance.capacity.times do
+      instance.queue << [:produce, event]
+    end
+    instance.produce event
+    events = instrumenter.events_by_name("event_discarded.flipper")
+    expect(events.size).to be(1)
   end
 
   it 'retries requests that error up to configured limit' do
