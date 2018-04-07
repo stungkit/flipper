@@ -53,8 +53,8 @@ module Flipper
       #  configuration.local_adapter = Flipper::Adapters::ActiveRecord.new
       attr_accessor :local_adapter
 
-      # Public: Number of milliseconds between attempts to bring the local in
-      # sync with cloud (default: 10_000 aka 10 seconds).
+      # Public: The Integer or Float number of seconds between attempts to bring
+      # the local in sync with cloud (default: 10).
       attr_accessor :sync_interval
 
       def initialize(options = {})
@@ -63,11 +63,15 @@ module Flipper
         @url = options.fetch(:url, DEFAULT_URL)
         @read_timeout = options.fetch(:read_timeout, 5)
         @open_timeout = options.fetch(:open_timeout, 5)
+<<<<<<< HEAD
         @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
         @debug_output = options[:debug_output]
 
         # Sync adapter and wrapping.
         @sync_interval = options.fetch(:sync_interval, 10_000)
+=======
+        @sync_interval = options.fetch(:sync_interval, 10)
+>>>>>>> master
         @local_adapter = options.fetch(:local_adapter) { Adapters::Memory.new }
         @adapter_block = ->(adapter) { adapter }
 
