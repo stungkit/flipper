@@ -4,7 +4,7 @@ require 'flipper/instrumenters/memory'
 
 RSpec.describe Flipper::RetryStrategy do
   it 'defaults limit' do
-    expect(subject.limit).to be(10)
+    expect(subject.limit).to be(2_000)
   end
 
   it 'defaults sleep' do
@@ -16,7 +16,7 @@ RSpec.describe Flipper::RetryStrategy do
   end
 
   it 'defaults max_delay' do
-    expect(subject.max_delay).to be(2.0)
+    expect(subject.max_delay).to be(60.0)
   end
 
   it 'defaults raise_at_limit' do
