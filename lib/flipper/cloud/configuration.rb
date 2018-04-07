@@ -63,15 +63,10 @@ module Flipper
         @url = options.fetch(:url, DEFAULT_URL)
         @read_timeout = options.fetch(:read_timeout, 5)
         @open_timeout = options.fetch(:open_timeout, 5)
-<<<<<<< HEAD
         @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
         @debug_output = options[:debug_output]
 
-        # Sync adapter and wrapping.
-        @sync_interval = options.fetch(:sync_interval, 10_000)
-=======
         @sync_interval = options.fetch(:sync_interval, 10)
->>>>>>> master
         @local_adapter = options.fetch(:local_adapter) { Adapters::Memory.new }
         @adapter_block = ->(adapter) { adapter }
 
