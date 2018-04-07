@@ -12,10 +12,10 @@ module Flipper
     # base - The starting delay between retries.
     # max_delay - The maximum to expand the delay between retries.
     def initialize(options = {})
-      @limit = options.fetch(:limit, 10)
+      @limit = options.fetch(:limit, 2_000)
       @sleep = options.fetch(:sleep, true)
       @base = options.fetch(:base, 0.5)
-      @max_delay = options.fetch(:max_delay, 2.0)
+      @max_delay = options.fetch(:max_delay, 60.0)
       @raise_at_limit = options.fetch(:raise_at_limit, false)
       @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
     end
@@ -43,6 +43,7 @@ module Flipper
             return
           end
         end
+
         ::Kernel.sleep sleep_for_attempts(attempts) if @sleep
 
         retry
