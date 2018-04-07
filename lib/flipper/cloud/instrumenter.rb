@@ -7,11 +7,11 @@ module Flipper
   module Cloud
     # Internal: Do not use this directly outside of this gem.
     class Instrumenter < SimpleDelegator
-      attr_reader :producer
+      attr_reader :reporter
       attr_reader :instrumenter
 
       def initialize(options = {})
-        @producer = options.fetch(:producer)
+        @reporter = options.fetch(:reporter)
         @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
         super @instrumenter
       end
@@ -20,7 +20,7 @@ module Flipper
         result = @instrumenter.instrument(name, payload, &block)
 
         begin
-          produce name, payload
+          report name, payload
         rescue => exception
           payload = {
             exception: exception,
@@ -34,7 +34,7 @@ module Flipper
 
       private
 
-      def produce(name, payload)
+      def report(name, payload)
         return unless name == Flipper::Feature::InstrumentationName
         return unless :enabled? == payload[:operation]
 
@@ -50,7 +50,7 @@ module Flipper
           dimensions: dimensions,
         }
         event = Flipper::Event.new(attributes)
-        @producer.produce event
+        @reporter.report event
       end
     end
   end

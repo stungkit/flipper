@@ -87,13 +87,13 @@ RSpec.describe Flipper::Cloud::Configuration do
     expect(instance.adapter).to be_instance_of(Flipper::Adapters::Instrumented)
   end
 
-  it "can set producer_options" do
-    producer_options = {
+  it "can set reporter_options" do
+    reporter_options = {
       flush_interval: 60,
     }
-    options = required_options.merge(producer_options: producer_options)
+    options = required_options.merge(reporter_options: reporter_options)
     instance = described_class.new(options)
-    expect(instance.producer_options[:flush_interval]).to eq(60)
+    expect(instance.reporter_options[:flush_interval]).to eq(60)
   end
 
   it 'configures http client' do

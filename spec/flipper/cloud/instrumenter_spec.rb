@@ -1,19 +1,19 @@
 require 'helper'
 require 'flipper/adapters/http/client'
 require 'flipper/instrumenters/memory'
-require 'flipper/cloud/producer'
+require 'flipper/cloud/reporter'
 require 'flipper/cloud/instrumenter'
 
 RSpec.describe Flipper::Cloud::Instrumenter do
   let(:client) do
     Flipper::Adapters::Http::Client.new(url: "https://www.featureflipper.com/adapter")
   end
-  let(:producer) { Flipper::Cloud::Producer.new(client: client) }
+  let(:reporter) { Flipper::Cloud::Reporter.new(client: client) }
   let(:instrumenter) { Flipper::Instrumenters::Memory.new }
 
-  subject { described_class.new(instrumenter: instrumenter, producer: producer) }
+  subject { described_class.new(instrumenter: instrumenter, reporter: reporter) }
 
-  it 'produces event for cloud if feature enabled operation' do
+  it 'reports event for cloud if feature enabled operation' do
     stub_request(:post, "https://www.featureflipper.com/adapter/events")
       .to_return(status: 201)
 
@@ -23,11 +23,11 @@ RSpec.describe Flipper::Cloud::Instrumenter do
       result: true,
     }
     subject.instrument(Flipper::Feature::InstrumentationName, payload)
-    producer.shutdown
-    expect(producer.queue.size).to be(0)
+    reporter.shutdown
+    expect(reporter.queue.size).to be(0)
   end
 
-  it 'instruments producer errors' do
+  it 'instruments reporter errors' do
     payload = {
       operation: :enabled?,
       feature_name: :foo,
@@ -35,7 +35,7 @@ RSpec.describe Flipper::Cloud::Instrumenter do
     }
     exception = StandardError.new
 
-    expect(producer).to receive(:produce).and_raise(exception)
+    expect(reporter).to receive(:report).and_raise(exception)
     expect { subject.instrument(Flipper::Feature::InstrumentationName, payload) }
       .not_to raise_error
 

@@ -40,9 +40,9 @@ module Flipper
       #  configuration.instrumenter = ActiveSupport::Notifications
       attr_accessor :instrumenter
 
-      # Public: The Hash of options for the producer.
-      # See Producer#initialize for valid keys.
-      attr_accessor :producer_options
+      # Public: The Hash of options for the reporter.
+      # See Reporter#initialize for valid keys.
+      attr_accessor :reporter_options
 
       # Public: Local adapter that all reads should go to in order to ensure
       # latency is low and resiliency is high. This adapter is automatically
@@ -70,7 +70,7 @@ module Flipper
         @local_adapter = options.fetch(:local_adapter) { Adapters::Memory.new }
         @adapter_block = ->(adapter) { adapter }
 
-        @producer_options = options.fetch(:producer_options) { {} }
+        @reporter_options = options.fetch(:reporter_options) { {} }
       end
 
       # Public: Read or customize the http adapter. Calling without a block will

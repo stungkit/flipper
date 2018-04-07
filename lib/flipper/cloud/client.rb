@@ -1,6 +1,6 @@
 require "delegate"
 require "flipper/retry_strategy"
-require "flipper/cloud/producer"
+require "flipper/cloud/reporter"
 require "flipper/cloud/instrumenter"
 
 module Flipper
@@ -9,11 +9,11 @@ module Flipper
     class Client < SimpleDelegator
       attr_reader :configuration
       attr_reader :flipper
-      attr_reader :producer
+      attr_reader :reporter
 
       def initialize(options = {})
         @configuration = options.fetch(:configuration)
-        @producer = build_producer
+        @reporter = build_reporter
         @flipper = build_flipper
         super @flipper
       end
@@ -23,21 +23,21 @@ module Flipper
       def build_flipper
         instrumenter_options = {
           instrumenter: @configuration.instrumenter,
-          producer: @producer,
+          reporter: @reporter,
         }
         instrumenter = Cloud::Instrumenter.new(instrumenter_options)
         Flipper.new(@configuration.adapter, instrumenter: instrumenter)
       end
 
-      def build_producer
-        default_producer_options = {
+      def build_reporter
+        default_reporter_options = {
           client: @configuration.client,
           instrumenter: @configuration.instrumenter,
           retry_strategy: RetryStrategy.new,
         }
-        provided_producer_options = @configuration.producer_options
-        producer_options = default_producer_options.merge(provided_producer_options)
-        Producer.new(producer_options)
+        provided_reporter_options = @configuration.reporter_options
+        reporter_options = default_reporter_options.merge(provided_reporter_options)
+        Reporter.new(reporter_options)
       end
     end
   end

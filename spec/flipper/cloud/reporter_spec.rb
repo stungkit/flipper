@@ -1,10 +1,10 @@
 require "helper"
 require "flipper/event"
 require "flipper/cloud/configuration"
-require "flipper/cloud/producer"
+require "flipper/cloud/reporter"
 require "flipper/instrumenters/memory"
 
-RSpec.describe Flipper::Cloud::Producer do
+RSpec.describe Flipper::Cloud::Reporter do
   let(:instrumenter) do
     Flipper::Instrumenters::Memory.new
   end
@@ -32,7 +32,7 @@ RSpec.describe Flipper::Cloud::Producer do
 
   let(:client) { configuration.client }
 
-  let(:producer_options) do
+  let(:reporter_options) do
     {
       client: client,
       capacity: 10,
@@ -45,18 +45,18 @@ RSpec.describe Flipper::Cloud::Producer do
   end
 
   subject do
-    described_class.new(producer_options)
+    described_class.new(reporter_options)
   end
 
   before do
     stub_request(:post, "https://www.featureflipper.com/adapter/events")
   end
 
-  it 'creates thread on produce and kills on shutdown' do
+  it 'creates thread on reporter and kills on shutdown' do
     expect(subject.instance_variable_get("@worker_thread")).to be_nil
     expect(subject.instance_variable_get("@timer_thread")).to be_nil
 
-    subject.produce(event)
+    subject.report(event)
 
     expect(subject.instance_variable_get("@worker_thread")).to be_instance_of(Thread)
     expect(subject.instance_variable_get("@timer_thread")).to be_instance_of(Thread)
@@ -69,7 +69,7 @@ RSpec.describe Flipper::Cloud::Producer do
     expect(subject.instance_variable_get("@timer_thread")).not_to be_alive
   end
 
-  it 'can produce messages' do
+  it 'can report messages' do
     block = lambda do |request|
       data = JSON.parse(request.body)
       events = data.fetch("events")
@@ -80,33 +80,33 @@ RSpec.describe Flipper::Cloud::Producer do
       .with(&block)
       .to_return(status: 201)
 
-    5.times { subject.produce(event) }
+    5.times { subject.report(event) }
     subject.shutdown
   end
 
   it 'instruments event being discarded when queue is full' do
-    instance = described_class.new(producer_options)
+    instance = described_class.new(reporter_options)
     instance.capacity.times do
-      instance.queue << [:produce, event]
+      instance.queue << [:report, event]
     end
-    instance.produce event
+    instance.report event
     events = instrumenter.events_by_name("event_discarded.flipper")
     expect(events.size).to be(1)
   end
 
   it 'retries requests that error up to configured limit' do
     retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
-    producer_options = {
+    reporter_options = {
       client: client,
       instrumenter: instrumenter,
       retry_strategy: retry_strategy,
     }
-    instance = described_class.new(producer_options)
+    instance = described_class.new(reporter_options)
 
     exception = StandardError.new
     stub_request(:post, "https://www.featureflipper.com/adapter/events")
       .to_raise(exception)
-    instance.produce(event)
+    instance.report(event)
     instance.shutdown
 
     events = instrumenter.events_by_name("exception.flipper")
@@ -117,17 +117,17 @@ RSpec.describe Flipper::Cloud::Producer do
     instrumenter.reset
 
     retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
-    producer_options = {
+    reporter_options = {
       client: client,
       instrumenter: instrumenter,
       retry_strategy: retry_strategy,
     }
-    instance = described_class.new(producer_options)
+    instance = described_class.new(reporter_options)
 
     stub_request(:post, "https://www.featureflipper.com/adapter/events")
       .to_return(status: 500)
 
-    instance.produce(event)
+    instance.report(event)
     instance.shutdown
 
     events = instrumenter.events_by_name("exception.flipper")
@@ -138,11 +138,11 @@ RSpec.describe Flipper::Cloud::Producer do
     begin
       server = TestServer.new
       client = configuration.client(url: "http://localhost:#{server.port}")
-      producer_options[:client] = client
-      producer_options[:shutdown_automatically] = true
-      producer = described_class.new(producer_options)
+      reporter_options[:client] = client
+      reporter_options[:shutdown_automatically] = true
+      reporter = described_class.new(reporter_options)
 
-      pid = fork { producer.produce(event) }
+      pid = fork { reporter.report(event) }
       Process.waitpid pid, 0
 
       expect(server.event_receiver.size).to be(1)

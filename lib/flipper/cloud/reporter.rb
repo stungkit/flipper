@@ -6,7 +6,7 @@ require "flipper/cloud/request"
 module Flipper
   module Cloud
     # Internal: Do not use this directly outside of this gem.
-    class Producer
+    class Reporter
       # Public: The Flipper::Adapters::Http::Client instance to use to make requests.
       attr_reader :client
 
@@ -31,7 +31,7 @@ module Flipper
       attr_reader :flush_interval
 
       # Public: The Integer or Float maximum number of seconds to wait when
-      # attempting graceful shutdown of the producer.
+      # attempting graceful shutdown of the reporter.
       attr_reader :shutdown_timeout
 
       # Public: The retry strategy to use when there are errors making requests
@@ -65,11 +65,11 @@ module Flipper
         end
       end
 
-      def produce(event)
+      def report(event)
         ensure_threads_alive
 
         if @queue.size < @capacity
-          @queue << [:produce, event]
+          @queue << [:report, event]
         else
           @instrumenter.instrument("event_discarded.flipper")
         end
@@ -87,7 +87,7 @@ module Flipper
           rescue => exception
             payload = {
               exception: exception,
-              context: "Flipper::Cloud::Producer#shutdown",
+              context: "Flipper::Cloud::Reporter#shutdown",
             }
             @instrumenter.instrument("exception.flipper", payload)
           end
@@ -128,7 +128,7 @@ module Flipper
               when :shutdown
                 request.perform
                 break
-              when :produce
+              when :report
                 request << item
               when :deliver
                 # TODO: don't do a deliver if a deliver happened for some other
