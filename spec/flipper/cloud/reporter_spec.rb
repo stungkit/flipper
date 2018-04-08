@@ -95,7 +95,7 @@ RSpec.describe Flipper::Cloud::Reporter do
   end
 
   it 'retries requests that error up to configured limit' do
-    retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
+    retry_strategy = Flipper::RetryStrategy.new(limit: 5, instrumenter: instrumenter, sleep: false)
     reporter_options = {
       client: client,
       instrumenter: instrumenter,
@@ -116,7 +116,7 @@ RSpec.describe Flipper::Cloud::Reporter do
   it 'retries 5xx response statuses up to configured limit' do
     instrumenter.reset
 
-    retry_strategy = Flipper::RetryStrategy.new(instrumenter: instrumenter, sleep: false)
+    retry_strategy = Flipper::RetryStrategy.new(limit: 5, instrumenter: instrumenter, sleep: false)
     reporter_options = {
       client: client,
       instrumenter: instrumenter,
