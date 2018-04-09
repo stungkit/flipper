@@ -57,8 +57,7 @@ module Flipper
 
         @worker_mutex = Mutex.new
         @timer_mutex = Mutex.new
-        update_worker_pid
-        update_timer_pid
+        set_pid
 
         if options.fetch(:shutdown_automatically, true)
           at_exit { shutdown }
@@ -99,6 +98,7 @@ module Flipper
       private
 
       def ensure_threads_alive
+        reset if forked?
         ensure_worker_running
         ensure_timer_running
       end
@@ -110,38 +110,40 @@ module Flipper
 
         begin
           return if worker_running?
-
-          update_worker_pid
-          @worker_thread = Thread.new do
-            request_options = {
-              client: @client,
-              limit: @batch_size,
-              retry_strategy: @retry_strategy,
-              instrumenter: @instrumenter,
-            }
-            request = Request.new(request_options)
-
-            loop do
-              operation, item = @queue.pop
-
-              case operation
-              when :shutdown
-                request.perform
-                break
-              when :report
-                request << item
-              when :deliver
-                # TODO: don't do a deliver if a deliver happened for some other
-                # reason recently like the request was full or a manual deliver
-                # was called
-                request.perform
-              else
-                raise "unknown operation: #{operation}"
-              end
-            end
-          end
+          @worker_thread = create_worker_thread
         ensure
           @worker_mutex.unlock
+        end
+      end
+
+      def create_worker_thread
+        Thread.new do
+          request_options = {
+            client: @client,
+            limit: @batch_size,
+            retry_strategy: @retry_strategy,
+            instrumenter: @instrumenter,
+          }
+          request = Request.new(request_options)
+
+          loop do
+            operation, item = @queue.pop
+
+            case operation
+            when :shutdown
+              request.perform
+              break
+            when :report
+              request << item
+            when :deliver
+              # TODO: don't do a deliver if a deliver happened for some other
+              # reason recently like the request was full or a manual deliver
+              # was called
+              request.perform
+            else
+              raise "unknown operation: #{operation}"
+            end
+          end
         end
       end
 
@@ -152,40 +154,46 @@ module Flipper
 
         begin
           return if timer_running?
-
-          update_timer_pid
-          @timer_thread = Thread.new do
-            loop do
-              sleep @flush_interval
-
-              @queue << [:deliver, nil]
-            end
-          end
+          @timer_thread = create_timer_thread
         ensure
           @timer_mutex.unlock
+        end
+      end
+
+      def create_timer_thread
+        Thread.new do
+          loop do
+            sleep @flush_interval
+            @queue << [:deliver, nil]
+          end
         end
       end
 
       # Is the worker thread assigned, alive and created in the same process that
       # we are currently in.
       def worker_running?
-        @worker_thread && @worker_pid == Process.pid && @worker_thread.alive?
+        @worker_thread && @worker_thread.alive?
       end
 
       # Is the timer thread assigned, alive and created in the same process that
       # we are currently in.
       def timer_running?
-        @timer_thread && @timer_pid == Process.pid && @timer_thread.alive?
+        @timer_thread && @timer_thread.alive?
       end
 
-      # Update the pid of the process that started the timer thread.
-      def update_timer_pid
-        @timer_pid = Process.pid
+      def forked?
+        @pid != Process.pid
       end
 
-      # Update the pid of the process that started the worker thread.
-      def update_worker_pid
-        @worker_pid = Process.pid
+      def reset
+        set_pid
+        @worker_mutex.unlock if @worker_mutex.locked?
+        @timer_mutex.unlock if @timer_mutex.locked?
+        @queue.clear
+      end
+
+      def set_pid
+        @pid = Process.pid
       end
     end
   end
