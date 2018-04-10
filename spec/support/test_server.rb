@@ -8,6 +8,8 @@ require "flipper"
 require "rack/handler/webrick"
 
 class TestServer
+  attr_reader :port
+
   def initialize
     @started = false
     @log = StringIO.new
@@ -34,10 +36,6 @@ class TestServer
 
   def access_lines
     access_log.split("\n")
-  end
-
-  def port
-    @port ||= TCPServer.new('127.0.0.1', 0).addr[1]
   end
 
   def reset
@@ -71,13 +69,20 @@ class TestServer
 
   def server
     @server ||= begin
+      @port ||= 10_001
       server_options = {
-        Port: port,
+        Port: @port,
         StartCallback: -> { @started = true },
         Logger: WEBrick::Log.new(@log, WEBrick::Log::INFO),
         AccessLog: [[@access_log, WEBrick::AccessLog::COMBINED_LOG_FORMAT]],
       }
-      server = WEBrick::HTTPServer.new(server_options)
+      server = begin
+        WEBrick::HTTPServer.new(server_options)
+      rescue Errno::EADDRINUSE
+        @port += 1
+        server_options[:Port] = @port
+        retry
+      end
       server.mount '/', Rack::Handler::WEBrick, app
       server
     end
