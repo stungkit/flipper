@@ -15,7 +15,7 @@ class TestServer
     @log = StringIO.new
     @access_log = StringIO.new
     @thread = Thread.new { server.start }
-    Timeout.timeout(1) { :wait until @started }
+    Timeout.timeout(10) { :wait until @started }
   end
 
   def event_receiver
