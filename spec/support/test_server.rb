@@ -79,6 +79,7 @@ class TestServer
       server = begin
         WEBrick::HTTPServer.new(server_options)
       rescue Errno::EADDRINUSE
+        p "#{@port} in use, trying next with #{@port + 1}"
         @port += 1
         server_options[:Port] = @port
         retry
