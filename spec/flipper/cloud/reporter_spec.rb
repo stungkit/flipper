@@ -146,16 +146,14 @@ RSpec.describe Flipper::Cloud::Reporter do
       Process.waitpid pid, 0
 
       expect(server.event_receiver.size).to be(1)
-
-      event_posts = server.access_lines.select { |line| line =~ %r{POST /events} }
-      expect(event_posts.size).to be(1)
+      expect(Integer(server.event_receiver.map(&:pid).first)).to eq(pid)
     ensure
       server.shutdown
     end
   end
 
   context 'on fork' do
-    it 'updates pid' do
+    it 'updates pid in forked process' do
       begin
         server = TestServer.new
         client = configuration.client(url: "http://localhost:#{server.port}")
@@ -167,10 +165,10 @@ RSpec.describe Flipper::Cloud::Reporter do
 
         pid = fork do
           reporter.report(event)
+          expect(reporter.instance_variable_get("@pid")).to eq(Process.pid)
           expect(reporter.instance_variable_get("@pid")).not_to eq(parent_pid)
         end
         Process.waitpid pid, 0
-
         expect($CHILD_STATUS.exitstatus).to be(0)
 
         reporter.shutdown
@@ -179,7 +177,7 @@ RSpec.describe Flipper::Cloud::Reporter do
       end
     end
 
-    it 'clears queue' do
+    it 'clears queue in forked process' do
       begin
         server = TestServer.new
         client = configuration.client(url: "http://localhost:#{server.port}")
@@ -188,31 +186,19 @@ RSpec.describe Flipper::Cloud::Reporter do
         reporter = described_class.new(reporter_options)
         reporter.report(event)
 
-        pid = fork do
-          reporter.report(event)
-
-          # if queue is not cleared, this will be 2, 1 from parent process and 1
-          # from line above in forked child, this cannot be tested prior because
-          # checking if forked and clearing queue happens on demand in
-          # first report
-          expect(reporter.queue.size).to be(1)
-        end
+        pid = fork { reporter.report(event) }
         Process.waitpid pid, 0
-
-        # if this is 1, that means rspec in the fork failed an expectation
-        expect($CHILD_STATUS.exitstatus).to be(0)
 
         reporter.shutdown
 
-        # if queue is not cleared on fork, this is 3 because the event in parent
-        # process is passed to forked process and reported twice
-        expect(server.event_receiver.map(&:events).flatten.size).to be(2)
+        expect(server.event_receiver.size).to be(2)
+        expect(server.event_receiver.map(&:pid).uniq.size).to be(2)
       ensure
         server.shutdown
       end
     end
 
-    it 'clears mutex locks' do
+    it 'clears mutex locks in forked process' do
       begin
         server = TestServer.new
         client = configuration.client(url: "http://localhost:#{server.port}")
@@ -220,26 +206,14 @@ RSpec.describe Flipper::Cloud::Reporter do
         reporter_options[:shutdown_automatically] = true
         reporter = described_class.new(reporter_options)
 
-        worker_mutex = reporter.instance_variable_get("@worker_mutex")
-        timer_mutex = reporter.instance_variable_get("@timer_mutex")
-        worker_mutex.lock
-        timer_mutex.lock
+        reporter.instance_variable_get("@worker_mutex").lock
+        reporter.instance_variable_get("@timer_mutex").lock
 
-        pid = fork do
-          reporter.report(event)
-
-          worker_mutex = reporter.instance_variable_get("@worker_mutex")
-          timer_mutex = reporter.instance_variable_get("@timer_mutex")
-
-          # these have to be checked after the report call because resetting the
-          # mutex locks is on demand
-          expect(worker_mutex).not_to be_locked
-          expect(timer_mutex).not_to be_locked
-        end
+        pid = fork { reporter.report(event) }
         Process.waitpid pid, 0
 
-        # if this is 1, that means rspec in the fork failed an expectation
-        expect($CHILD_STATUS.exitstatus).to be(0)
+        expect(server.event_receiver.size).to be(1)
+        expect(server.event_receiver.map(&:pid).uniq.size).to be(1)
       ensure
         server.shutdown
       end
