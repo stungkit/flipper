@@ -244,42 +244,5 @@ RSpec.describe Flipper::Cloud::Reporter do
         server.shutdown
       end
     end
-
-    it 'starts new threads' do
-      begin
-        server = TestServer.new
-        client = configuration.client(url: "http://localhost:#{server.port}")
-        reporter_options[:client] = client
-        reporter_options[:shutdown_automatically] = true
-        reporter = described_class.new(reporter_options)
-        reporter.report(event)
-
-        worker_thread = reporter.instance_variable_get("@worker_thread")
-        timer_thread = reporter.instance_variable_get("@timer_thread")
-
-        expect(worker_thread).to be_instance_of(Thread)
-        expect(timer_thread).to be_instance_of(Thread)
-
-        pid = fork do
-          reporter.report(event)
-
-          forked_worker_thread = reporter.instance_variable_get("@worker_thread")
-          forked_timer_thread = reporter.instance_variable_get("@timer_thread")
-
-          # these have to be checked after the report call because resetting the
-          # threads is on demand
-          expect(forked_worker_thread.object_id).not_to eq(worker_thread.object_id)
-          expect(forked_timer_thread.object_id).not_to eq(timer_thread.object_id)
-        end
-        Process.waitpid pid, 0
-
-        # if this is 1, that means rspec in the fork failed an expectation
-        expect($CHILD_STATUS.exitstatus).to be(0)
-
-        reporter.shutdown
-      ensure
-        server.shutdown
-      end
-    end
   end
 end
