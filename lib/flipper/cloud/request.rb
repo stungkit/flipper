@@ -1,4 +1,5 @@
 require "json"
+require "securerandom"
 require "flipper/instrumenters/noop"
 require "flipper/retry_strategy"
 
@@ -36,10 +37,15 @@ module Flipper
       def perform
         return if @events.empty?
 
+        # Stable request id across retries so we can at least try to detect
+        # duplicates on the server side.
+        headers = {
+          "FLIPPER_REQUEST_ID" => SecureRandom.hex(16),
+        }
         body = JSON.generate(events: @events.map(&:as_json))
 
         @retry_strategy.call do
-          response = @client.post("/events", body: body)
+          response = @client.post("/events", body: body, headers: headers)
           status = response.code.to_i
           raise ResponseError, status if ResponseError.retry?(status)
         end
