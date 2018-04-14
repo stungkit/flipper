@@ -1,5 +1,3 @@
-require 'socket'
-require 'thread'
 require 'flipper/adapters/http'
 require 'flipper/instrumenters/noop'
 require 'flipper/adapters/memory'
@@ -92,12 +90,6 @@ module Flipper
         end
       end
 
-      HOSTNAME = begin
-                   Socket.gethostbyname(Socket.gethostname).first
-                 rescue
-                   Socket.gethostname
-                 end
-
       def client(options = {})
         client_options = {
           url: @url,
@@ -106,12 +98,6 @@ module Flipper
           debug_output: @debug_output,
           headers: {
             "FEATURE_FLIPPER_TOKEN" => @token,
-            "FLIPPER_VERSION" => Flipper::VERSION,
-            "FLIPPER_PLATFORM" => "ruby",
-            "FLIPPER_PLATFORM_VERSION" => RUBY_VERSION,
-            "FLIPPER_HOSTNAME" => HOSTNAME,
-            "FLIPPER_PID" => Process.pid.to_s,
-            "FLIPPER_THREAD" => Thread.current.object_id.to_s,
           },
         }.merge(options)
         Flipper::Adapters::Http::Client.new(client_options)

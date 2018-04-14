@@ -1,5 +1,7 @@
 require 'uri'
 require 'openssl'
+require 'socket'
+require 'thread'
 require 'flipper/version'
 require 'flipper/timestamp'
 
@@ -19,6 +21,12 @@ module Flipper
           "http".freeze,
           "https".freeze,
         ].freeze
+
+        HOSTNAME = begin
+                     Socket.gethostbyname(Socket.gethostname).first
+                   rescue
+                     Socket.gethostname
+                   end
 
         def self.url_for(url, path)
           uri = URI(url)
@@ -104,6 +112,12 @@ module Flipper
         def build_request(http_method, uri, headers, options)
           request_headers = {
             "FLIPPER_TIMESTAMP".freeze => Flipper::Timestamp.generate.to_s,
+            "FLIPPER_PID" => Process.pid.to_s,
+            "FLIPPER_THREAD" => Thread.current.object_id.to_s,
+            "FLIPPER_VERSION" => Flipper::VERSION,
+            "FLIPPER_PLATFORM" => "ruby",
+            "FLIPPER_PLATFORM_VERSION" => RUBY_VERSION,
+            "FLIPPER_HOSTNAME" => HOSTNAME,
           }.merge(headers)
           request = http_method.new(uri.request_uri)
           request.initialize_http_header(request_headers)
