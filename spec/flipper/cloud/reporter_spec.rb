@@ -108,7 +108,7 @@ RSpec.describe Flipper::Cloud::Reporter do
 
     exception = StandardError.new
     stub_request(:post, "https://www.featureflipper.com/adapter/events")
-      .with(headers: {"FLIPPER_REQUEST_ID" => "1"})
+      .with(headers: { "FLIPPER_REQUEST_ID" => "1" })
       .to_raise(exception)
     instance.report(event)
     instance.shutdown
@@ -132,7 +132,7 @@ RSpec.describe Flipper::Cloud::Reporter do
     expect(SecureRandom).to receive(:hex).once.and_return("1")
 
     stub_request(:post, "https://www.featureflipper.com/adapter/events")
-      .with(headers: {"FLIPPER_REQUEST_ID" => "1"})
+      .with(headers: { "FLIPPER_REQUEST_ID" => "1" })
       .to_return(status: 500)
 
     instance.report(event)
