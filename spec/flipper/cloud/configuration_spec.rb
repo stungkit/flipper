@@ -110,15 +110,7 @@ RSpec.describe Flipper::Cloud::Configuration do
     expect(client.read_timeout).to be(99)
     expect(client.open_timeout).to be(99)
     expect(client.debug_output).to be(STDOUT)
-
     expect(client.headers["FEATURE_FLIPPER_TOKEN"]).to eq(required_options.fetch(:token))
-    expect(client.headers["FLIPPER_VERSION"]).to eq(Flipper::VERSION)
-    expect(client.headers["FLIPPER_PLATFORM"]).to eq("ruby")
-    expect(client.headers["FLIPPER_PLATFORM_VERSION"]).to eq(RUBY_VERSION)
-    hostname = Socket.gethostbyname(Socket.gethostname).first
-    expect(client.headers["FLIPPER_HOSTNAME"]).to eq(hostname)
-    expect(client.headers["FLIPPER_PID"]).to eq(Process.pid.to_s)
-    expect(client.headers["FLIPPER_THREAD"]).to eq(Thread.current.object_id.to_s)
   end
 
   it 'allows customizing client options' do

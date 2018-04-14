@@ -41,10 +41,17 @@ RSpec.describe Flipper::Adapters::Http do
   end
 
   it "sends default headers" do
+    hostname = Socket.gethostbyname(Socket.gethostname).first
     headers = {
       'Accept' => 'application/json',
       'Content-Type' => 'application/json',
       'User-Agent' => "Flipper HTTP Adapter v#{Flipper::VERSION}",
+      'FLIPPER_VERSION' => Flipper::VERSION,
+      'FLIPPER_PLATFORM' => "ruby",
+      'FLIPPER_PLATFORM_VERSION' => RUBY_VERSION,
+      'FLIPPER_HOSTNAME' => hostname,
+      'FLIPPER_PID' => Process.pid.to_s,
+      'FLIPPER_THREAD' => Thread.current.object_id.to_s,
     }
     stub_request(:get, "http://app.com/flipper/features/feature_panel")
       .with(headers: headers)
