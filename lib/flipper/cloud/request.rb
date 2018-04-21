@@ -20,22 +20,33 @@ module Flipper
         end
       end
 
+      # Internal: The maximum number of items to buffer prior to performing
+      # a request.
+      attr_reader :limit
+
+      # Internal: The array of events currently buffered.
+      attr_reader :events
+
       def initialize(options = {})
         @client = options.fetch(:client)
         @limit = options.fetch(:limit, 1_000)
         @retry_strategy = options.fetch(:retry_strategy) { RetryStrategy.new }
         @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
-        reset
+        @events = []
       end
 
+      # Public: Adds event to Array of events. Performs request if number of
+      # events is greater than or equal to limit.
+      #
+      # Returns Array of events to be consistent with Array#<<.
       def <<(event)
         @events << event
-        perform if @events.size >= @limit
-        nil
+        perform if full?
+        @events
       end
 
       def perform
-        return if @events.empty?
+        return if empty?
 
         # Stable request id across retries so we can at least try to detect
         # duplicates on the server side.
@@ -63,8 +74,16 @@ module Flipper
 
       private
 
+      def full?
+        @events.size >= @limit
+      end
+
+      def empty?
+        @events.empty?
+      end
+
       def reset
-        @events = []
+        @events.clear
       end
     end
   end
