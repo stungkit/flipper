@@ -5,9 +5,7 @@ require "flipper/cloud/reporter"
 require "flipper/instrumenters/memory"
 
 RSpec.describe Flipper::Cloud::Reporter do
-  let(:instrumenter) do
-    Flipper::Instrumenters::Memory.new
-  end
+  let(:instrumenter) { Flipper::Instrumenters::Memory.new }
 
   let(:event) do
     attributes = {
