@@ -28,7 +28,7 @@ RSpec.describe Flipper::Api::Action do
   describe 'https verbs' do
     it "won't run method that isn't whitelisted" do
       fake_request = Struct.new(:request_method, :env, :session).new('NOOOOPE', {}, {})
-      action = action_subclass.new(flipper, fake_request, event_receiver)
+      action = action_subclass.new(flipper, fake_request)
       expect do
         action.run
       end.to raise_error(Flipper::Api::RequestMethodNotSupported)
@@ -36,25 +36,25 @@ RSpec.describe Flipper::Api::Action do
 
     it 'will run get' do
       fake_request = Struct.new(:request_method, :env, :session).new('GET', {}, {})
-      action = action_subclass.new(flipper, fake_request, event_receiver)
+      action = action_subclass.new(flipper, fake_request)
       expect(action.run).to eq([200, {}, 'get'])
     end
 
     it 'will run post' do
       fake_request = Struct.new(:request_method, :env, :session).new('POST', {}, {})
-      action = action_subclass.new(flipper, fake_request, event_receiver)
+      action = action_subclass.new(flipper, fake_request)
       expect(action.run).to eq([200, {}, 'post'])
     end
 
     it 'will run put' do
       fake_request = Struct.new(:request_method, :env, :session).new('PUT', {}, {})
-      action = action_subclass.new(flipper, fake_request, event_receiver)
+      action = action_subclass.new(flipper, fake_request)
       expect(action.run).to eq([200, {}, 'put'])
     end
 
     it 'will run delete' do
       fake_request = Struct.new(:request_method, :env, :session).new('DELETE', {}, {})
-      action = action_subclass.new(flipper, fake_request, event_receiver)
+      action = action_subclass.new(flipper, fake_request)
       expect(action.run).to eq([200, {}, 'delete'])
     end
   end
@@ -62,7 +62,7 @@ RSpec.describe Flipper::Api::Action do
   describe '#json_error_response' do
     describe ':feature_not_found' do
       it 'locates and serializes error correctly' do
-        action = action_subclass.new({}, {}, event_receiver)
+        action = action_subclass.new({}, {})
         response = catch(:halt) do
           action.json_error_response(:feature_not_found)
         end
@@ -76,7 +76,7 @@ RSpec.describe Flipper::Api::Action do
 
     describe ':group_not_registered' do
       it 'locates and serializes error correctly' do
-        action = action_subclass.new({}, {}, event_receiver)
+        action = action_subclass.new({}, {})
         response = catch(:halt) do
           action.json_error_response(:group_not_registered)
         end
@@ -92,7 +92,7 @@ RSpec.describe Flipper::Api::Action do
 
     describe 'invalid error key' do
       it 'raises descriptive error' do
-        action = action_subclass.new({}, {}, event_receiver)
+        action = action_subclass.new({}, {})
         catch(:halt) do
           expect { action.json_error_response(:invalid_error_key) }.to raise_error(KeyError)
         end

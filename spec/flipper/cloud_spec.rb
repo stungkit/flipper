@@ -1,6 +1,5 @@
 require 'helper'
 require 'flipper/cloud'
-require 'flipper/event_receivers/memory'
 require 'flipper/instrumenters/memory'
 require 'flipper/adapters/instrumented'
 require 'flipper/adapters/pstore'

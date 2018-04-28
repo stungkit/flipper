@@ -2,7 +2,6 @@ require "socket"
 require "thread"
 require "flipper/adapters/memory"
 require "flipper/instrumenters/memory"
-require "flipper/event_receivers/memory"
 require "flipper/api"
 require "flipper"
 require "rack/handler/webrick"
@@ -10,16 +9,28 @@ require "rack/handler/webrick"
 class TestServer
   attr_reader :port
 
+  class RequestTrackingMiddleware
+    def initialize(app, on_request)
+      @app = app
+      @on_request = on_request
+    end
+
+    def call(env)
+      request = Rack::Request.new(env)
+      @on_request.call request
+      @app.call env
+    end
+  end
+
+  attr_reader :requests
+
   def initialize
     @started = false
+    @requests = []
     @log = StringIO.new
     @access_log = StringIO.new
     @thread = Thread.new { server.start }
     Timeout.timeout(10) { :wait until @started }
-  end
-
-  def event_receiver
-    @event_receiver ||= Flipper::EventReceivers::Memory.new
   end
 
   def log
@@ -40,7 +51,7 @@ class TestServer
 
   def reset
     adapter_source.clear
-    event_receiver.clear
+    @requests.clear
     @access_log.truncate(0)
     @log.truncate(0)
   end
@@ -52,7 +63,10 @@ class TestServer
   private
 
   def app
-    @app ||= Flipper::Api.app(flipper, event_receiver: event_receiver)
+    @app ||= Flipper::Api.app(flipper) do |builder|
+      on_request = ->(request) { @requests << request }
+      builder.use RequestTrackingMiddleware, on_request
+    end
   end
 
   def instrumenter

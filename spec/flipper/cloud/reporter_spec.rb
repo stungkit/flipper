@@ -143,8 +143,11 @@ RSpec.describe Flipper::Cloud::Reporter do
       pid = fork { reporter.report(event) }
       Process.waitpid pid, 0
 
-      expect(server.event_receiver.size).to be(1)
-      expect(Integer(server.event_receiver.map(&:pid).first)).to eq(pid)
+      expect(server.requests.size).to be(1)
+
+      request = server.requests.first
+      expect(request.path).to eq("/events")
+      expect(Integer(request.env.fetch("HTTP_FLIPPER_PID"))).to eq(pid)
     ensure
       server.shutdown
     end
@@ -189,8 +192,13 @@ RSpec.describe Flipper::Cloud::Reporter do
 
         reporter.shutdown
 
-        expect(server.event_receiver.size).to be(2)
-        expect(server.event_receiver.map(&:pid).uniq.size).to be(2)
+        expect(server.requests.size).to be(2)
+
+        paths = server.requests.map(&:path).uniq
+        expect(paths).to eq(["/events"])
+
+        pids = server.requests.map { |request| request.env.fetch("HTTP_FLIPPER_PID") }
+        expect(pids.uniq.size).to be(2)
       ensure
         server.shutdown
       end
@@ -210,8 +218,12 @@ RSpec.describe Flipper::Cloud::Reporter do
         pid = fork { reporter.report(event) }
         Process.waitpid pid, 0
 
-        expect(server.event_receiver.size).to be(1)
-        expect(server.event_receiver.map(&:pid).uniq.size).to be(1)
+        expect(server.requests.size).to be(1)
+
+        request = server.requests.first
+        expect(request.path).to eq("/events")
+
+        expect(Integer(request.env.fetch("HTTP_FLIPPER_PID"))).to eq(pid)
       ensure
         server.shutdown
       end

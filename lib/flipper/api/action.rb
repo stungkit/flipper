@@ -33,8 +33,8 @@ module Flipper
       # request - The Rack::Request that was sent.
       #
       # Returns result of Action#run.
-      def self.run(flipper, request, event_receiver)
-        new(flipper, request, event_receiver).run
+      def self.run(flipper, request)
+        new(flipper, request).run
       end
 
       # Internal: The regex that matches which routes this action will work for.
@@ -49,18 +49,13 @@ module Flipper
       # Public: The Rack::Request to provide a response for.
       attr_reader :request
 
-      # Public: The event receiver that can apply logic when batches of
-      # instrumented events are received.
-      attr_reader :event_receiver
-
       # Public: The params for the request.
       def_delegator :@request, :params
       def_delegator :@request, :env
 
-      def initialize(flipper, request, event_receiver)
+      def initialize(flipper, request)
         @flipper = flipper
         @request = request
-        @event_receiver = event_receiver
         @code = 200
         @headers = { 'Content-Type' => Api::CONTENT_TYPE }
       end

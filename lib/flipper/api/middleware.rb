@@ -1,6 +1,5 @@
 require 'rack'
 require 'flipper/api/action_collection'
-require 'flipper/event_receivers/noop'
 
 # Require all V1 actions automatically.
 Pathname(__FILE__).dirname.join('v1/actions').each_child(false) do |name|
@@ -13,7 +12,6 @@ module Flipper
       def initialize(app, options = {})
         @app = app
         @env_key = options.fetch(:env_key, 'flipper')
-        @event_receiver = options.fetch(:event_receiver, EventReceivers::Noop)
 
         @action_collection = ActionCollection.new
         @action_collection.add Api::V1::Actions::PercentageOfTimeGate
@@ -24,7 +22,6 @@ module Flipper
         @action_collection.add Api::V1::Actions::ClearFeature
         @action_collection.add Api::V1::Actions::Feature
         @action_collection.add Api::V1::Actions::Features
-        @action_collection.add Api::V1::Actions::Events
       end
 
       def call(env)
@@ -38,7 +35,7 @@ module Flipper
           @app.call(env)
         else
           flipper = env.fetch(@env_key)
-          action_class.run(flipper, request, @event_receiver)
+          action_class.run(flipper, request)
         end
       end
     end
