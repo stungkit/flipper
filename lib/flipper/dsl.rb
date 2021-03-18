@@ -19,8 +19,7 @@ module Flipper
     #           :instrumenter - What should be used to instrument all the things.
     def initialize(adapter, options = {})
       @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
-      memoized = Adapters::Memoizable.new(adapter)
-      @adapter = memoized
+      @adapter = adapter
       @memoized_features = {}
     end
 

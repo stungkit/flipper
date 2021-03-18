@@ -1,7 +1,42 @@
 module Flipper
   class Configuration
+    class Middleware
+      attr_reader :klass, :args, :block
+
+      def initialize(klass, *args, &block)
+        @klass, @args, @block = klass, args, block
+      end
+
+      def build(adapter)
+        @instance ||= klass.new(adapter, *args, &block)
+      end
+    end
+
     def initialize
-      @default = -> { Flipper.new(Flipper::Adapters::Memory.new) }
+      @storage = -> { Flipper::Adapters::Memory.new }
+      @default = -> { Flipper.new(adapter) }
+      @middleware = []
+
+      use Adapters::Memoizable
+    end
+
+    def use(adapter, *args, &block)
+      @middleware.push Middleware.new(adapter, *args, &block)
+    end
+
+    # Returns the default adapter used by flipper. The adapter is built by initializing
+    # the default storage adapter, and wrapping it in any middleware
+    #
+    #   Flipper.configure do |config|
+    #     config.use Flipper::Adapter::ReadOnly
+    #     config.use Flipper::Adapter::RedisCache, Redis.new
+    #     config.storage Flipper::Adapter::ActiveRecord
+    #   end
+    #
+    def adapter
+      @middleware.reduce(storage) do |adapter, middleware|
+        middleware.build(adapter)
+      end
     end
 
     # Controls the default instance for flipper. When used with a block it
@@ -26,6 +61,16 @@ module Flipper
         @default = block
       else
         @default.call
+      end
+    end
+
+    def storage(klass = nil, &block)
+      if klass
+        @storage = -> { klass.new }
+      elsif block
+        @storage = block
+      else
+        @storage.call
       end
     end
   end
