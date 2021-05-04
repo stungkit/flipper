@@ -7,6 +7,8 @@ module Flipper
     # Private: What is being used to instrument all the things.
     attr_reader :instrumenter
 
+    def_delegators :@memoizer, :adapter, :memoizing?
+
     # Public: Returns a new instance of the DSL.
     #
     # adapter - The adapter that this DSL instance should use.
@@ -15,21 +17,8 @@ module Flipper
     def initialize(adapter, options = {})
       @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
       @adapter = adapter
+      @memoizer = Memoizer.new(@adapter)
       @memoized_features = {}
-    end
-
-    # Private
-    def adapter
-      @memoizer&.adapter || @adapter
-    end
-
-    def memoize=(_)
-      warn "#memoize= is deprecated. Call #memoize with a block"
-      warn caller[0]
-    end
-
-    def memoizing?
-      !!@memoizer
     end
 
     # Public: Check if a feature is enabled.
@@ -291,8 +280,12 @@ module Flipper
     end
 
     def memoize(&block)
-      @memoizer ||= Memoizer.new(@adapter) { @memoizer = nil }
-      @memoizer.call(&block) if block
+      @memoizer.call(&block)
+    end
+
+    def memoize=(_)
+      warn "#memoize= is deprecated. Call #memoize with a block"
+      warn caller[0]
     end
   end
 end
