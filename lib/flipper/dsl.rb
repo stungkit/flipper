@@ -4,13 +4,8 @@ module Flipper
   class DSL
     extend Forwardable
 
-    # Private
-    attr_reader :adapter
-
     # Private: What is being used to instrument all the things.
     attr_reader :instrumenter
-
-    def_delegators :@adapter, :memoize=, :memoizing?
 
     # Public: Returns a new instance of the DSL.
     #
@@ -19,9 +14,22 @@ module Flipper
     #           :instrumenter - What should be used to instrument all the things.
     def initialize(adapter, options = {})
       @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
-      memoized = Adapters::Memoizable.new(adapter)
-      @adapter = memoized
+      @adapter = adapter
       @memoized_features = {}
+    end
+
+    # Private
+    def adapter
+      @memoizer&.adapter || @adapter
+    end
+
+    def memoize=(_)
+      warn "#memoize= is deprecated. Call #memoize with a block"
+      warn caller[0]
+    end
+
+    def memoizing?
+      !!@memoizer
     end
 
     # Public: Check if a feature is enabled.
@@ -179,7 +187,7 @@ module Flipper
         raise ArgumentError, "#{name} must be a String or Symbol"
       end
 
-      @memoized_features[name.to_sym] ||= Feature.new(name, @adapter, instrumenter: instrumenter)
+      @memoized_features[name.to_sym] ||= Feature.new(name, adapter, instrumenter: instrumenter)
     end
 
     # Public: Preload the features with the given names.
@@ -189,7 +197,7 @@ module Flipper
     # Returns an Array of Flipper::Feature.
     def preload(names)
       features = names.map { |name| feature(name) }
-      @adapter.get_multi(features)
+      adapter.get_multi(features)
       features
     end
 
@@ -197,7 +205,7 @@ module Flipper
     #
     # Returns an Array of Flipper::Feature.
     def preload_all
-      keys = @adapter.get_all.keys
+      keys = adapter.get_all.keys
       keys.map { |key| feature(key) }
     end
 
@@ -280,6 +288,11 @@ module Flipper
 
     # Cloud DSL method that does nothing for open source version.
     def sync_secret
+    end
+
+    def memoize(&block)
+      @memoizer ||= Memoizer.new(@adapter) { @memoizer = nil }
+      @memoizer.call(&block) if block
     end
   end
 end

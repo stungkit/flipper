@@ -15,10 +15,6 @@ RSpec.describe Flipper::Middleware::Memoizer do
   let(:flipper) { Flipper.new(adapter) }
   let(:env) { { 'flipper' => flipper } }
 
-  after do
-    flipper.memoize = nil
-  end
-
   it 'raises if initialized with app and flipper instance' do
     expect do
       described_class.new(app, flipper)

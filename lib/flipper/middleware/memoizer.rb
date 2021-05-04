@@ -58,25 +58,18 @@ module Flipper
       end
 
       def memoized_call(env)
-        reset_on_body_close = false
         flipper = env.fetch(@env_key) { Flipper }
-        original = flipper.memoizing?
-        flipper.memoize = true
 
-        if @opts[:preload] === true
-          flipper.preload_all
-        elsif (preload = @opts[:preload])
-          flipper.preload(preload)
-        end
+        flipper.memoize do |memoizer|
+          case @opts[:preload]
+          when true then flipper.preload_all
+          when Array then flipper.preload(@opts[:preload])
+          end
 
-        response = @app.call(env)
-        response[2] = Rack::BodyProxy.new(response[2]) do
-          flipper.memoize = original
+          response = @app.call(env)
+          response[2] = Rack::BodyProxy.new(response[2], &memoizer.reset_later)
+          response
         end
-        reset_on_body_close = true
-        response
-      ensure
-        flipper.memoize = original if flipper && !reset_on_body_close
       end
     end
   end

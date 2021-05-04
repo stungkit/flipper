@@ -65,7 +65,7 @@ module Flipper
                  :time, :percentage_of_time,
                  :features, :feature, :[], :preload, :preload_all,
                  :adapter, :add, :exist?, :remove, :import,
-                 :memoize=, :memoizing?,
+                 :memoize=, :memoizing?, :memoize,
                  :sync, :sync_secret # For Flipper::Cloud. Will error for OSS Flipper.
 
   # Public: Use this to register a group by name.
@@ -153,6 +153,7 @@ require 'flipper/gate'
 require 'flipper/instrumenters/memory'
 require 'flipper/instrumenters/noop'
 require 'flipper/identifier'
+require 'flipper/memoizer'
 require 'flipper/middleware/memoizer'
 require 'flipper/middleware/setup_env'
 require 'flipper/registry'

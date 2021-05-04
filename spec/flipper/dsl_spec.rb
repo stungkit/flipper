@@ -340,20 +340,35 @@ RSpec.describe Flipper::DSL do
     end
   end
 
-  describe '#memoize=' do
-    it 'delegates to adapter' do
-      expect(subject.adapter).not_to be_memoizing
-      subject.memoize = true
-      expect(subject.adapter).to be_memoizing
-    end
-  end
+  describe "#memoize" do
+    it "wraps adapter in memoizing adapter" do
+      called = false
 
-  describe '#memoizing?' do
-    it 'delegates to adapter' do
-      subject.memoize = false
-      expect(subject.adapter.memoizing?).to eq(subject.memoizing?)
-      subject.memoize = true
-      expect(subject.adapter.memoizing?).to eq(subject.memoizing?)
+      expect(subject.memoizing?).to be(false)
+
+      subject.memoize do
+        called = true
+        expect(subject.memoizing?).to be(true)
+        expect(subject.adapter).to be_a(Flipper::Adapters::Memoizable)
+      end
+
+      expect(subject.adapter).to be_a(Flipper::Adapters::Memory)
+      expect(subject.memoizing?).to be(false)
+      expect(called).to be(true)
+    end
+
+    it "allows delaying reset" do
+      expect(subject.memoizing?).to be(false)
+
+      reset = subject.memoize { |m| m.reset_later }
+
+      expect(subject.memoizing?).to be(true)
+      expect(subject.adapter).to be_a(Flipper::Adapters::Memoizable)
+
+      reset.call
+
+      expect(subject.memoizing?).to be(false)
+      expect(subject.adapter).to be_a(Flipper::Adapters::Memory)
     end
   end
 end
