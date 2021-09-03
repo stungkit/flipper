@@ -1,39 +1,49 @@
 module Flipper
   module Rules
-    # Flipper::Rule.build do
-    #   any [
-    #     property("admin").eq(true),
-    #     all [
-    #       property("age").gte(21),
-    #       property("plan").eq("paid"),
+    # Flipper::Rules.build do
+    #   any do
+    #     property("admin").eq(true)
+    #     all do
+    #       property("age").gte(21)
+    #       property("plan").eq("paid")
     #       condition("buyer").in(property("roles"))
-    #     ]
-    #   ]
+    #     end
+    #   end
     # end
     class Builder
-      def all(rules)
-        All.new rules
+      attr_reader :rules
+
+      def initialize
+        @rules = []
       end
 
-      def any(rules)
-        Any.new rules
+      def all(&block)
+        builder = Builder.new
+        instance_exec &block
+        @rules << All.new(builder.rules)
+      end
+
+      def any(&block)
+        builder = Builder.new
+        instance_exec &block
+        @rules << Any.new(builder.rules)
       end
 
       def property(name)
-        ConditionBuilder.new(Property.new(name))
+        ConditionBuilder.new(self, Property.new(name))
       end
 
       def condition(value)
-        ConditionBuilder.new(value)
+        ConditionBuilder.new(self, value)
       end
     end
 
-    class ConditionBuilder < Struct.new(:left)
+    class ConditionBuilder < Struct.new(:builder, :left)
       # TODO proxy to :left
 
       Condition::OPERATIONS.keys.each do |operator|
         define_method(operator) do |right|
-          Condition.new(left, operator, right)
+          builder.rules << Condition.new(left, operator, right)
         end
       end
     end
