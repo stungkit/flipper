@@ -12,9 +12,13 @@ module Flipper
       end
     end
 
-    def self.build(hash)
-      type = const_get(hash.fetch("type"))
-      type.build(hash.fetch("value"))
+    def self.build(hash = {})
+      if block_given?
+        yield Flipper::Rules::Builder.new
+      else
+        type = const_get(hash.fetch("type"))
+        type.build(hash.fetch("value"))
+      end
     end
   end
 end
